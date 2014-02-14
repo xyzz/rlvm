@@ -37,6 +37,7 @@
 #include <exception>
 #include <utility>
 #include <sstream>
+#include <cassert>
 
 #include "bytecode.h"
 #include "scenario.h"

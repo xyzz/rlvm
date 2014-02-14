@@ -41,7 +41,8 @@ env = Environment(
   ],
 
   CPPFLAGS = [
-    "-funsigned-char"
+    "-funsigned-char",
+    "-std=c++11"
   ],
 
   CPPDEFINES = [
@@ -377,16 +378,16 @@ else:
 
 # Copy the platform independent SEEN.TXT files to output (we no longer depend
 # on rldev because I can no longer reliably compile it).
-env.SConscript("test/SConscript.rlc",
-               variant_dir="build/test",
-               duplicate=0,
-               exports='env')
+#env.SConscript("test/SConscript.rlc",
+#               variant_dir="build/test",
+#               duplicate=0,
+#               exports='env')
 
 # Build the rlvmTests binary that uses those SEEN.TXT files.
-env.SConscript("SConscript.test",
-               variant_dir="$BUILD_DIR/",
-               duplicate=0,
-               exports='env')
+#env.SConscript("SConscript.test",
+#               variant_dir="$BUILD_DIR/",
+#               duplicate=0,
+#               exports='env')
 
 env.SConscript("SConscript.luarlvm",
                variant_dir="$BUILD_DIR/",
