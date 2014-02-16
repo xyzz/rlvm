@@ -364,6 +364,8 @@ class SoundSystem {
 
   System& system() { return system_; }
 
+  System& system_;
+
  protected:
   SeTable& seTable() { return se_table_; }
   const DSTable& getDSTable() { return ds_tracks_; }
@@ -384,8 +386,6 @@ class SoundSystem {
   VoiceCache voice_cache_;
 
  private:
-
-  System& system_;
 
   // Defined music tracks (files)
   DSTable ds_tracks_;

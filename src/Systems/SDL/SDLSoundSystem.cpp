@@ -72,7 +72,7 @@ SDLSoundSystem::SDLSoundChunkPtr SDLSoundSystem::getSoundChunk(
     const std::string& file_name, SoundChunkCache& cache) {
   SDLSoundChunkPtr sample = cache.fetch(file_name);
   if (sample == NULL) {
-    fs::path file_path = system().findFile(file_name, SOUND_FILETYPES);
+    fs::path file_path = system_.findFile(file_name, SOUND_FILETYPES);
     if (file_path.empty()) {
       ostringstream oss;
       oss << "Could not find sound file \"" << file_name << "\".";
@@ -112,7 +112,7 @@ boost::shared_ptr<SDLMusic> SDLSoundSystem::LoadMusic(
   const DSTable& ds_table = getDSTable();
   DSTable::const_iterator ds_it = ds_table.find(boost::to_lower_copy(bgm_name));
   if (ds_it != ds_table.end())
-    return SDLMusic::CreateMusic(system(), ds_it->second);
+    return SDLMusic::CreateMusic(system_, ds_it->second);
 
   const CDTable& cd_table = getCDTable();
   CDTable::const_iterator cd_it = cd_table.find(boost::to_lower_copy(bgm_name));
@@ -208,7 +208,6 @@ void SDLSoundSystem::setChannelVolume(const int channel, const int level) {
 }
 
 void SDLSoundSystem::wavPlay(const std::string& wav_file, bool loop) {
-  return;
   int channel_number = SDLSoundChunk::FindNextFreeExtraChannel();
   if (channel_number == -1) {
     ostringstream oss;
@@ -221,14 +220,12 @@ void SDLSoundSystem::wavPlay(const std::string& wav_file, bool loop) {
 
 void SDLSoundSystem::wavPlay(const std::string& wav_file,
                              bool loop, const int channel) {
-  return;
   checkChannel(channel, "SDLSoundSystem::wav_play");
   wavPlayImpl(wav_file, channel, loop);
 }
 
 void SDLSoundSystem::wavPlay(const std::string& wav_file, bool loop,
                              const int channel, const int fadein_ms) {
-  return;
   checkChannel(channel, "SDLSoundSystem::wav_play");
 
   if (pcmEnabled()) {
@@ -241,7 +238,6 @@ void SDLSoundSystem::wavPlay(const std::string& wav_file, bool loop,
 }
 
 bool SDLSoundSystem::wavPlaying(const int channel) {
-  return false;
   checkChannel(channel, "SDLSoundSystem::wav_playing");
   return Mix_Playing(channel);
 }
@@ -311,7 +307,6 @@ int SDLSoundSystem::bgmStatus() const {
 
 void SDLSoundSystem::bgmPlay(const std::string& bgm_name,
                              bool loop) {
-  return;
   if (!boost::iequals(bgmName(), bgm_name)) {
     boost::shared_ptr<SDLMusic> bgm = LoadMusic(bgm_name);
     bgm->play(loop);
@@ -320,7 +315,6 @@ void SDLSoundSystem::bgmPlay(const std::string& bgm_name,
 
 void SDLSoundSystem::bgmPlay(const std::string& bgm_name,
                              bool loop, int fade_in_ms) {
-  return;
   if (!boost::iequals(bgmName(), bgm_name)) {
     boost::shared_ptr<SDLMusic> bgm = LoadMusic(bgm_name);
     bgm->fadeIn(loop, fade_in_ms);
@@ -329,7 +323,6 @@ void SDLSoundSystem::bgmPlay(const std::string& bgm_name,
 
 void SDLSoundSystem::bgmPlay(const std::string& bgm_name,
                              bool loop, int fade_in_ms, int fade_out_ms) {
-  return;
   if (!boost::iequals(bgmName(), bgm_name)) {
     queued_music_ = LoadMusic(bgm_name);
     queued_music_loop_ = loop;
