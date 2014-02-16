@@ -24,11 +24,14 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // -----------------------------------------------------------------------
+#include "log.h"
 
+#ifndef ANDROID
 #include "GL/glew.h"
+#else
+#endif
 
 #include <SDL/SDL.h>
-#include <SDL/SDL_opengl.h>
 
 #include <iostream>
 #include <cstdio>
@@ -46,10 +49,16 @@
 #include "Systems/SDL/SDLGraphicsSystem.hpp"
 #include "Systems/SDL/SDLSurface.hpp"
 #include "Systems/SDL/SDLUtils.hpp"
+#ifndef ANDROID
 #include "Systems/SDL/Shaders.hpp"
+#endif
 #include "Systems/SDL/Texture.hpp"
 
 #include "pygame/alphablit.h"
+
+#ifdef ANDROID
+#define GL_TEXTURE_WRAP_R                 0x8072
+#endif
 
 using namespace std;
 
@@ -70,6 +79,19 @@ int Texture::ScreenHeight() {
   return s_screen_height;
 }
 
+GLenum get_texture_format(GLint bpp)
+{
+    switch (bpp) {
+    case 4:
+        return GL_RGBA;
+    case 3:
+        return GL_RGB;
+    }
+    throw "Unsupported pixel format";
+}
+
+int counter = 0;
+
 // -----------------------------------------------------------------------
 // Texture
 // -----------------------------------------------------------------------
@@ -81,20 +103,24 @@ Texture::Texture(SDL_Surface* surface, int x, int y, int w, int h,
     texture_height_(SafeSize(logical_height_)),
     back_texture_id_(0),
     is_upside_down_(false) {
+  surface = SDL_DisplayFormatAlpha(surface);
+  glEnable(GL_TEXTURE_2D);
   glGenTextures(1, &texture_id_);
   glBindTexture(GL_TEXTURE_2D, texture_id_);
   DebugShowGLErrors();
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+  GLenum texture_format = get_texture_format(bytes_per_pixel);
+
   if (w == total_width_ && h == total_height_) {
     SDL_LockSurface(surface);
-    glTexImage2D(GL_TEXTURE_2D, 0, bytes_per_pixel,
+    glTexImage2D(GL_TEXTURE_2D, 0, texture_format,
                  texture_width_, texture_height_,
                  0,
-                 byte_order, byte_type, NULL);
+                 texture_format, GL_UNSIGNED_BYTE, NULL);
     DebugShowGLErrors();
 
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, surface->w, surface->h,
@@ -121,16 +147,18 @@ Texture::Texture(SDL_Surface* surface, int x, int y, int w, int h,
     }
     SDL_UnlockSurface(surface);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, bytes_per_pixel,
+    glTexImage2D(GL_TEXTURE_2D, 0, texture_format,
                  texture_width_, texture_height_,
                  0,
-                 byte_order, byte_type, NULL);
+                 texture_format, GL_UNSIGNED_BYTE, NULL);
     DebugShowGLErrors();
 
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h,
                     byte_order, byte_type, pixel_data);
     DebugShowGLErrors();
   }
+
+  SDL_FreeSurface(surface);
 }
 
 // -----------------------------------------------------------------------
@@ -142,11 +170,12 @@ Texture::Texture(render_to_texture, int width, int height)
     texture_width_(0), texture_height_(0), texture_id_(0),
     back_texture_id_(0),
     is_upside_down_(true) {
+  glEnable(GL_TEXTURE_2D);
   glGenTextures(1, &texture_id_);
   glBindTexture(GL_TEXTURE_2D, texture_id_);
   DebugShowGLErrors();
-//  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-//  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -156,7 +185,7 @@ Texture::Texture(render_to_texture, int width, int height)
   // This may fail.
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                texture_width_, texture_height_,
-               0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+               0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
   DebugShowGLErrors();
 
   glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, logical_width_,
@@ -193,6 +222,7 @@ void Texture::reupload(SDL_Surface* surface,
                        int x, int y, int w, int h,
                        unsigned int bytes_per_pixel, int byte_order,
                        int byte_type) {
+  surface = SDL_DisplayFormatAlpha(surface);
   glBindTexture(GL_TEXTURE_2D, texture_id_);
 
   if (w == total_width_ && h == total_height_) {
@@ -226,6 +256,7 @@ void Texture::reupload(SDL_Surface* surface,
                     byte_order, byte_type, pixel_data);
     DebugShowGLErrors();
   }
+  SDL_FreeSurface(surface);
 }
 
 // -----------------------------------------------------------------------
@@ -249,6 +280,7 @@ std::string readTextFile(const std::string& file) {
 
 // -----------------------------------------------------------------------
 
+#ifndef ANDROID
 void printARBLog(GLhandleARB obj) {
   char str[256];
   GLsizei size = 0;
@@ -257,6 +289,7 @@ void printARBLog(GLhandleARB obj) {
     cerr << "Log: " << str << endl;
   }
 }
+#endif
 
 // -----------------------------------------------------------------------
 
@@ -266,6 +299,8 @@ void Texture::renderToScreen(const Rect& src, const Rect& dst, int opacity) {
   int fdx1 = dst.x(), fdy1 = dst.y(), fdx2 = dst.x2(), fdy2 = dst.y2();
   if (!filterCoords(x1, y1, x2, y2, fdx1, fdy1, fdx2, fdy2))
     return;
+
+  glEnable(GL_TEXTURE_2D);
 
   // For the time being, we are dumb and assume that it's one texture
 
@@ -282,6 +317,7 @@ void Texture::renderToScreen(const Rect& src, const Rect& dst, int opacity) {
   glBindTexture(GL_TEXTURE_2D, texture_id_);
 
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+#if 0
   glBegin(GL_QUADS); {
     glColor4ub(255, 255, 255, opacity);
     glTexCoord2f(thisx1, thisy1);
@@ -294,6 +330,30 @@ void Texture::renderToScreen(const Rect& src, const Rect& dst, int opacity) {
     glVertex2i(fdx1, fdy2);
   }
   glEnd();
+#else
+  glColor4ub(255, 255, 255, opacity);
+  GLfloat vtx1[] = {
+    fdx1, fdy1, 0,
+    fdx2, fdy1, 0,
+    fdx2, fdy2, 0,
+    fdx1, fdy2, 0
+  };
+  GLfloat tex1[] = {
+    thisx1,thisy1,
+    thisx2,thisy1,
+    thisx2,thisy2,
+    thisx1,thisy2
+  };
+  glEnableClientState(GL_VERTEX_ARRAY);
+  glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+  glVertexPointer(3, GL_FLOAT, 0, vtx1);
+  glTexCoordPointer(2, GL_FLOAT, 0, tex1);
+  glDrawArrays(GL_TRIANGLE_FAN,0,4);
+
+  glDisableClientState(GL_VERTEX_ARRAY);
+  glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+#endif
   glBlendFunc(GL_ONE, GL_ZERO);
 }
 
@@ -308,12 +368,13 @@ void Texture::renderToScreen(const Rect& src, const Rect& dst, int opacity) {
 void Texture::renderToScreenAsColorMask(
   const Rect& src, const Rect& dst, const RGBAColour& rgba, int filter) {
   if (filter == 0) {
+#ifndef ANDROID
     if (GLEW_ARB_fragment_shader && GLEW_ARB_multitexture) {
       render_to_screen_as_colour_mask_subtractive_glsl(src, dst, rgba);
-    } else {
+    } else
+#endif
       render_to_screen_as_colour_mask_subtractive_fallback(
         src, dst, rgba);
-    }
   } else {
     render_to_screen_as_colour_mask_additive(
       src, dst, rgba);
@@ -324,6 +385,7 @@ void Texture::renderToScreenAsColorMask(
 
 void Texture::render_to_screen_as_colour_mask_subtractive_glsl(
   const Rect& src, const Rect& dst, const RGBAColour& rgba) {
+#if 0
   int x1 = src.x(), y1 = src.y(), x2 = src.x2(), y2 = src.y2();
   int fdx1 = dst.x(), fdy1 = dst.y(), fdx2 = dst.x2(), fdy2 = dst.y2();
   if (!filterCoords(x1, y1, x2, y2, fdx1, fdy1, fdx2, fdy2))
@@ -410,6 +472,10 @@ void Texture::render_to_screen_as_colour_mask_subtractive_glsl(
   glUseProgramObjectARB(0);
   glEnable(GL_BLEND);
   glBlendFunc(GL_ONE, GL_ZERO);
+#else
+  // TODO
+  renderToScreen(src, dst, rgba.a());
+#endif
 }
 
 // -----------------------------------------------------------------------
@@ -448,6 +514,7 @@ void Texture::render_to_screen_as_colour_mask_subtractive_fallback(
 //                      GL_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA);
   glBlendFunc(GL_SRC_ALPHA_SATURATE, GL_ONE_MINUS_SRC_ALPHA);
 
+#if 0
   glBegin(GL_QUADS); {
     glColorRGBA(rgba);
     glTexCoord2f(thisx1, thisy1);
@@ -460,6 +527,31 @@ void Texture::render_to_screen_as_colour_mask_subtractive_fallback(
     glVertex2i(fdx1, fdy2);
   }
   glEnd();
+#else
+  glColor4ub(rgba.r(), rgba.g(), rgba.b(), rgba.a());
+  GLfloat vtx1[] = {
+    fdx1, fdy1, 0,
+    fdx2, fdy1, 0,
+    fdx2, fdy2, 0,
+    fdx1, fdy2, 0
+  };
+  GLfloat tex1[] = {
+    thisx1,thisy1,
+    thisx2,thisy1,
+    thisx2,thisy2,
+    thisx1,thisy2
+  };
+
+  glEnableClientState(GL_VERTEX_ARRAY);
+  glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+  glVertexPointer(3, GL_FLOAT, 0, vtx1);
+  glTexCoordPointer(2, GL_FLOAT, 0, tex1);
+  glDrawArrays(GL_TRIANGLE_FAN,0,4);
+
+  glDisableClientState(GL_VERTEX_ARRAY);
+  glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+#endif
 
   glBlendFunc(GL_ONE, GL_ZERO);
 }
@@ -487,6 +579,7 @@ void Texture::render_to_screen_as_colour_mask_additive(
   glBindTexture(GL_TEXTURE_2D, texture_id_);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+#if 0
   glBegin(GL_QUADS); {
     glColorRGBA(rgba);
     glTexCoord2i(thisx1, thisy1);
@@ -499,6 +592,31 @@ void Texture::render_to_screen_as_colour_mask_additive(
     glVertex2f(fdx1, fdy2);
   }
   glEnd();
+#else
+  glColor4ub(rgba.r(), rgba.g(), rgba.b(), rgba.a());
+  GLfloat vtx1[] = {
+    fdx1, fdy1, 0,
+    fdx2, fdy1, 0,
+    fdx2, fdy2, 0,
+    fdx1, fdy2, 0
+  };
+  GLfloat tex1[] = {
+    thisx1,thisy1,
+    thisx2,thisy1,
+    thisx2,thisy2,
+    thisx1,thisy2
+  };
+
+  glEnableClientState(GL_VERTEX_ARRAY);
+  glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+  glVertexPointer(3, GL_FLOAT, 0, vtx1);
+  glTexCoordPointer(2, GL_FLOAT, 0, tex1);
+  glDrawArrays(GL_TRIANGLE_FAN,0,4);
+
+  glDisableClientState(GL_VERTEX_ARRAY);
+  glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+#endif
 
   glBlendFunc(GL_ONE, GL_ZERO);
 }
@@ -507,6 +625,7 @@ void Texture::render_to_screen_as_colour_mask_additive(
 
 void Texture::renderToScreen(const Rect& src, const Rect& dst,
                              const int opacity[4]) {
+#if 0
   // For the time being, we are dumb and assume that it's one texture
   int x1 = src.x(), y1 = src.y(), x2 = src.x2(), y2 = src.y2();
   int fdx1 = dst.x(), fdy1 = dst.y(), fdx2 = dst.x2(), fdy2 = dst.y2();
@@ -542,6 +661,10 @@ void Texture::renderToScreen(const Rect& src, const Rect& dst,
   }
   glEnd();
   glBlendFunc(GL_ONE, GL_ZERO);
+#else
+  // TODO
+  renderToScreen(src, dst, (opacity[0] + opacity[1] + opacity[2] + opacity[3]) / 4);
+#endif
 }
 
 // -----------------------------------------------------------------------
@@ -596,6 +719,7 @@ void Texture::renderToScreenAsObject(
     // in a shader if available. It's costly enough that we make sure we need
     // to use it.
     bool using_shader = false;
+#if 0
     if ((go.light() ||
          go.tint() != RGBColour::Black() ||
          go.colour() != RGBAColour::Clear() ||
@@ -618,7 +742,9 @@ void Texture::renderToScreenAsObject(
 
       // Our final blending color has to be all white here.
       using_shader = true;
-    } else {
+    } else
+#endif
+    {
       // The shader takes care of the alpha for us, so we need to specify when
       // not using it.
       glColor4ub(255, 255, 255, alpha);
@@ -635,7 +761,9 @@ void Texture::renderToScreenAsObject(
         break;
       case 2: {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+#if 0
         glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+#endif
         break;
       }
       default: {
@@ -645,6 +773,7 @@ void Texture::renderToScreenAsObject(
       }
     }
 
+#if 0
     glBegin(GL_QUADS); {
       glTexCoord2f(thisx1, thisy1);
       glVertex2i(0, 0);
@@ -656,12 +785,40 @@ void Texture::renderToScreenAsObject(
       glVertex2i(0, height);
     }
     glEnd();
+#else
+  GLfloat vtx1[] = {
+    0, 0, 0,
+    width, 0, 0,
+    width, height, 0,
+    0, height, 0
+  };
+  GLfloat tex1[] = {
+    thisx1,thisy1,
+    thisx2,thisy1,
+    thisx2,thisy2,
+    thisx1,thisy2
+  };
 
+  glEnableClientState(GL_VERTEX_ARRAY);
+  glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+  glVertexPointer(3, GL_FLOAT, 0, vtx1);
+  glTexCoordPointer(2, GL_FLOAT, 0, tex1);
+  glDrawArrays(GL_TRIANGLE_FAN,0,4);
+
+  glDisableClientState(GL_VERTEX_ARRAY);
+  glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+#endif
+
+#if 0
     if (using_shader) {
       glUseProgramObjectARB(0);
     }
+#endif
 
+#if 0
     glBlendEquation(GL_FUNC_ADD);
+#endif
     glBlendFunc(GL_ONE, GL_ZERO);
   }
   glPopMatrix();

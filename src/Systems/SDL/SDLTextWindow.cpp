@@ -30,7 +30,12 @@
 #include <string>
 #include <vector>
 
+#ifndef ANDROID
 #include <SDL/SDL_opengl.h>
+#else
+#include <GLES/gl.h>
+#endif
+
 #include <SDL/SDL_ttf.h>
 
 #include "Systems/Base/Colour.hpp"

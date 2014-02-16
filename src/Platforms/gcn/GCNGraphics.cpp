@@ -154,6 +154,7 @@ void GCNGraphics::drawImageStretched(
   glEnable(GL_BLEND);
 
   // Draw a textured quad -- the image
+#if 0
   glBegin(GL_QUADS);
   glTexCoord2f(texX1, texY1);
   glVertex3i(dstX, dstY, 0);
@@ -167,6 +168,30 @@ void GCNGraphics::drawImageStretched(
   glTexCoord2f(texX2, texY1);
   glVertex3i(dstX + width, dstY, 0);
   glEnd();
+#else
+  GLfloat vtx1[] = {
+    dstX, dstY, 0,
+    dstX, dstY + height, 0,
+    dstX + width, dstY + height, 0,
+    dstX + width, dstY, 0
+  };
+  GLfloat tex1[] = {
+    texX1,texY1,
+    texX1,texY2,
+    texX2,texY2,
+    texX2,texY1
+  };
+
+  glEnableClientState(GL_VERTEX_ARRAY);
+  glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+  glVertexPointer(3, GL_FLOAT, 0, vtx1);
+  glTexCoordPointer(2, GL_FLOAT, 0, tex1);
+  glDrawArrays(GL_TRIANGLE_FAN,0,4);
+
+  glDisableClientState(GL_VERTEX_ARRAY);
+  glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+#endif
   glDisable(GL_TEXTURE_2D);
 }
 

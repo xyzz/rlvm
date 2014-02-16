@@ -63,6 +63,8 @@
 #include "Utilities/StringUtilities.hpp"
 #include "libReallive/gameexe.h"
 
+int rand_r (unsigned int *seed);
+
 const float PI = 3.14159265;
 
 using namespace std;

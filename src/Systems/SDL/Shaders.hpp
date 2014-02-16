@@ -27,7 +27,11 @@
 #ifndef SRC_SYSTEMS_SDL_SHADERS_HPP_
 #define SRC_SYSTEMS_SDL_SHADERS_HPP_
 
+#ifndef ANDROID
 #include <SDL/SDL_opengl.h>
+#else
+#include <GLES/gl.h>
+#endif
 
 class GraphicsObject;
 

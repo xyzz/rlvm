@@ -88,12 +88,15 @@ SDLSystem::~SDLSystem() {
 
 // -----------------------------------------------------------------------
 
+extern bool global_texture_reload;
+
 void SDLSystem::run(RLMachine& machine) {
   // Give the event handler a chance to run.
   event_system_->executeEventSystem(machine);
   text_system_->executeTextSystem();
   sound_system_->executeSoundSystem();
-  graphics_system_->executeGraphicsSystem(machine);
+  if (!global_texture_reload)
+    graphics_system_->executeGraphicsSystem(machine);
 
   if (platform())
     platform()->run(machine);

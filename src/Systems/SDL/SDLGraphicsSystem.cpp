@@ -25,12 +25,23 @@
 //
 // -----------------------------------------------------------------------
 
+#ifndef ANDROID
 #include "GL/glew.h"
+#else
+#define GLdouble     GLfloat
+#define glOrtho      glOrthof
+#define glClearDepth glClearDepthf
+#define glFrustum   glFrustumf
+#endif
 
 #include "Systems/SDL/SDLGraphicsSystem.hpp"
 
 #include <SDL/SDL.h>
+#ifndef ANDROID
 #include <SDL/SDL_opengl.h>
+#else
+#include <GLES/gl.h>
+#endif
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -63,7 +74,9 @@
 #include "Systems/SDL/SDLRenderToTextureSurface.hpp"
 #include "Systems/SDL/SDLSurface.hpp"
 #include "Systems/SDL/SDLUtils.hpp"
+#ifndef ANDROID
 #include "Systems/SDL/Shaders.hpp"
+#endif
 #include "Systems/SDL/Texture.hpp"
 #include "Utilities/Exception.hpp"
 #include "Utilities/Graphics.hpp"
@@ -71,6 +84,8 @@
 #include "Utilities/StringUtilities.hpp"
 #include "libReallive/gameexe.h"
 #include "xclannad/file.h"
+
+#include "log.h"
 
 using namespace boost;
 using namespace std;
@@ -96,6 +111,7 @@ void SDLGraphicsSystem::beginFrame() {
   glDisable(GL_LIGHTING);
   DebugShowGLErrors();
 
+  glViewport(0, 0, (GLint) screenSize().width(), (GLint) screenSize().height());
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   glOrtho(0.0, (GLdouble)screenSize().width(), (GLdouble)screenSize().height(),
@@ -127,6 +143,7 @@ void SDLGraphicsSystem::endFrame() {
     (*it)->render(NULL);
   }
 
+#ifndef ANDROID
   if (screenUpdateMode() == SCREENUPDATEMODE_MANUAL) {
     // Copy the area behind the cursor to the temporary buffer (drivers differ:
     // the contents of the back buffer is undefined after SDL_GL_SwapBuffers()
@@ -136,19 +153,26 @@ void SDLGraphicsSystem::endFrame() {
     glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
                         screenSize().width(), screenSize().height());
     screen_contents_texture_valid_ = true;
-  } else {
+  } else
+#endif
+  {
     screen_contents_texture_valid_ = false;
   }
 
   drawCursor();
 
   // Swap the buffers
+#ifndef ANDROID
   glFlush();
+#endif
   SDL_GL_SwapBuffers();
   ShowGLErrors();
 }
 
 void SDLGraphicsSystem::redrawLastFrame() {
+#ifdef ANDROID
+  return; // TODO(xyz): this makes clicks (in main menu) unreliable, wtf?
+#endif
   // We won't redraw the screen between when the DrawManual() command is issued
   // by the bytecode and the first refresh() is called since we need a valid
   // copy of the screen to work with and we only snapshot the screen during
@@ -156,6 +180,7 @@ void SDLGraphicsSystem::redrawLastFrame() {
   if (screen_contents_texture_valid_) {
     // Redraw the screen
     glBindTexture(GL_TEXTURE_2D, screen_contents_texture_);
+#if 0
     glBegin(GL_QUADS); {
       int dx1 = 0;
       int dx2 = screenSize().width();
@@ -176,10 +201,45 @@ void SDLGraphicsSystem::redrawLastFrame() {
       glVertex2i(dx1, dy2);
     }
     glEnd();
+#else
+      int dx1 = 0;
+      int dx2 = screenSize().width();
+      int dy1 = 0;
+      int dy2 = screenSize().height();
+
+      float x_cord = dx2 / float(screen_tex_width_);
+      float y_cord = dy2 / float(screen_tex_height_);
+
+      glColor4ub(255, 255, 255, 255);
+    GLfloat vtx1[] = {
+      dx1, dy1, 0,
+      dx2, dy1, 0,
+      dx2, dy2, 0,
+      dx1, dy2, 0
+    };
+    GLfloat tex1[] = {
+      0,y_cord,
+      x_cord,y_cord,
+      x_cord,0,
+      0,0
+    };
+
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+    glVertexPointer(3, GL_FLOAT, 0, vtx1);
+    glTexCoordPointer(2, GL_FLOAT, 0, tex1);
+    glDrawArrays(GL_TRIANGLE_FAN,0,4);
+
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+#endif
 
     drawCursor();
 
+#ifndef ANDROID
     glFlush();
+#endif
 
     // Swap the buffers
     SDL_GL_SwapBuffers();
@@ -236,7 +296,7 @@ SDLGraphicsSystem::SDLGraphicsSystem(System& system, Gameexe& gameexe)
 
   setWindowTitle();
 
-#if defined(__linux__)
+#if defined(__linux__) and !defined(ANDROID)
   // We only set the icon on linux because OSX will use the icns file
   // automatically and this doesn't look too awesome.
   SDL_Surface* icon = IMG_Load("/usr/share/icons/hicolor/48x48/apps/rlvm.png");
@@ -275,8 +335,8 @@ void SDLGraphicsSystem::setupVideo() {
   // the flags to pass to SDL_SetVideoMode
   int video_flags;
   video_flags  = SDL_OPENGL;          // Enable OpenGL in SDL
-  video_flags |= SDL_GL_DOUBLEBUFFER; // Enable double buffering
-  video_flags |= SDL_SWSURFACE;
+  //video_flags |= SDL_GL_DOUBLEBUFFER; // Enable double buffering
+  //video_flags |= SDL_SWSURFACE;
 
   if (screenMode() == 0)
     video_flags |= SDL_FULLSCREEN;
@@ -287,6 +347,7 @@ void SDLGraphicsSystem::setupVideo() {
   SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
+  LOGD("GOT %d:%d\n", screenSize().width(), screenSize().height());
   // Set the video mode
   if ((screen_ = SDL_SetVideoMode(
         screenSize().width(), screenSize().height(), bpp, video_flags)) == 0 ) {
@@ -298,6 +359,7 @@ void SDLGraphicsSystem::setupVideo() {
     throw SystemError(ss.str());
   }
 
+#if 0
   // Initialize glew
   GLenum err = glewInit();
   if (GLEW_OK != err) {
@@ -305,6 +367,7 @@ void SDLGraphicsSystem::setupVideo() {
     oss << "Failed to initialize GLEW: " << glewGetErrorString(err);
     throw SystemError(oss.str());
   }
+#endif
 
   glEnable(GL_TEXTURE_2D);
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -344,7 +407,7 @@ void SDLGraphicsSystem::setupVideo() {
   screen_tex_width_ = SafeSize(screenSize().width());
   screen_tex_height_ = SafeSize(screenSize().height());
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-               screen_tex_width_, screen_tex_height_, 0, GL_RGB,
+               screen_tex_width_, screen_tex_height_, 0, GL_RGBA,
                GL_UNSIGNED_BYTE, NULL);
 
   ShowGLErrors();
@@ -406,7 +469,9 @@ void SDLGraphicsSystem::setWindowTitle() {
 void SDLGraphicsSystem::Observe(NotificationType type,
                                 const NotificationSource& source,
                                 const NotificationDetails& details) {
+#ifndef ANDROID
   Shaders::Reset();
+#endif
 }
 
 void SDLGraphicsSystem::setWindowSubtitle(const std::string& cp932str,

@@ -188,6 +188,7 @@ SoundSystem::SoundSystem(System& system)
 SoundSystem::~SoundSystem() {}
 
 void SoundSystem::executeSoundSystem() {
+  return;
   unsigned int cur_time = system().event().getTicks();
 
   ChannelAdjustmentMap::iterator it = pcm_adjustment_tasks_.begin();
@@ -403,11 +404,13 @@ int SoundSystem::bgmKoeFadeVolume() const {
 }
 
 void SoundSystem::koePlay(int id) {
+  return;
   if (!system_.fastForward())
     koePlayImpl(id);
 }
 
 void SoundSystem::koePlay(int id, int charid) {
+  return;
   if (!system_.fastForward()) {
     bool play_voice = true;
 

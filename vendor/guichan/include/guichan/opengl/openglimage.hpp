@@ -53,6 +53,8 @@
 #include <mgl/gl.h>
 #elif defined (__APPLE__)
 #include <OpenGL/gl.h>
+#elif defined(ANDROID)
+#include <GLES/gl.h>
 #else
 #include <GL/gl.h>
 #endif

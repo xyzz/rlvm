@@ -48,6 +48,8 @@
 #include "libReallive/reallive.h"
 #include "utf8cpp/utf8.h"
 
+#include "log.h"
+
 using namespace std;
 
 namespace fs = boost::filesystem;
@@ -79,6 +81,8 @@ RLVMInstance::RLVMInstance()
 }
 
 RLVMInstance::~RLVMInstance() {}
+
+extern bool global_texture_reload;
 
 void RLVMInstance::Run(const boost::filesystem::path& gamerootPath) {
   try {
@@ -157,6 +161,11 @@ void RLVMInstance::Run(const boost::filesystem::path& gamerootPath) {
       Sys_load()(rlmachine, load_save_);
 
     while (!rlmachine.halted()) {
+      if (global_texture_reload) {
+        LOGD("reloading all textures\n");
+        sdlSystem.graphics().notifyScreenStateChanged(0);
+        global_texture_reload = false;
+      }
       // Give SDL a chance to respond to events, redraw the screen,
       // etc.
       sdlSystem.run(rlmachine);

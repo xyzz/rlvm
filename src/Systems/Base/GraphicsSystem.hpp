@@ -49,6 +49,12 @@
 #include "Utilities/LazyArray.hpp"
 #include "lru_cache.hpp"
 
+#ifdef ANDROID
+#include <GLES/gl.h>
+#else
+#include <GL/gl.h>
+#endif
+
 class ColourFilter;
 class Gameexe;
 class GraphicsObject;
@@ -280,6 +286,7 @@ class GraphicsSystem : public EventListener {
   void setShowWeather(const int in);
   int showWeather() const { return globals_.show_weather; }
 
+  void notifyScreenStateChanged(const int in);
   // Sets whether we're in fullscreen mode. setScreenMode() is virtual so we
   // can tell SDL to switch the screen mode.
   virtual void setScreenMode(const int in);

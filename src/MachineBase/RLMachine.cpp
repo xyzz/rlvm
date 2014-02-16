@@ -69,6 +69,10 @@
 #include "libReallive/intmemref.h"
 #include "libReallive/scenario.h"
 
+#ifdef ANDROID
+#include <android/log.h>
+#endif
+
 namespace fs = boost::filesystem;
 
 using namespace std;
@@ -323,6 +327,8 @@ void RLMachine::executeUntilHalted() {
   }
 }
 
+int calls = 0;
+
 void RLMachine::advanceInstructionPointer() {
   if (!replaying_graphics_stack()) {
     std::vector<StackFrame>::reverse_iterator it = find_if(
@@ -332,6 +338,8 @@ void RLMachine::advanceInstructionPointer() {
 
     if (it != call_stack_.rend()) {
       it->ip++;
+
+      ++calls;
       if (it->ip == it->scenario->end())
         halted_ = true;
     }

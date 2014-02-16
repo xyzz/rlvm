@@ -46,6 +46,7 @@ const char* western_platform_fonts[] = {
 #else
   "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf",
 #endif
+  "/sdcard/vn/DejaVuSans.ttf",
   NULL
 };
 
@@ -114,7 +115,7 @@ fs::path findFontFile(System& system) {
       return gameFont;
   }
 
-  if (system.useWesternFont()) {
+  if (true || system.useWesternFont()) {
     // Try to look up a western alternative font.
     for (const char** file = western_platform_fonts; *file; ++file) {
       if (fs::exists(*file))

@@ -39,6 +39,7 @@
  * uses the BOOST scientific computing library to provide the thread safety
  * mutexes.
  */
+#include <cstddef>
 #include <map>
 #include <list>
 #include <vector>

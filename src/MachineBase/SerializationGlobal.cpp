@@ -102,6 +102,7 @@ void saveGlobalMemoryTo(std::ostream& oss, RLMachine& machine) {
 }
 
 void loadGlobalMemory(RLMachine& machine) {
+  return;
   fs::path home = buildGlobalMemoryFilename(machine);
   fs::ifstream file(home, ios::binary);
 

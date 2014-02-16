@@ -386,6 +386,9 @@ void System::dumpRenderTree(RLMachine& machine) {
 }
 
 boost::filesystem::path System::getHomeDirectory() {
+#ifdef ANDROID
+  return fs::path("/sdcard/vn/");
+#endif
   string drive, home;
   char *homeptr     = getenv("HOME");
   char *driveptr    = getenv("HOMEDRIVE");

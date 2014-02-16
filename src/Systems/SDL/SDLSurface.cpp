@@ -467,8 +467,10 @@ static void determineProperties(
         //
         // 20070303: Whoah! Is this the internal format on all
         // platforms!?
+#ifndef ANDROID
         byte_order = GL_BGRA;
         byte_type = GL_UNSIGNED_INT_8_8_8_8_REV;
+#endif
       } else {
         ios_base::fmtflags f = cerr.flags(ios::hex | ios::uppercase);
         cerr << "Unknown mask: (" << format->Rmask << ", " << format->Gmask
@@ -489,10 +491,12 @@ static void determineProperties(
   }
   SDL_UnlockSurface(surface);
 
+#if 0
   if (is_mask) {
     // Compile shader for use:
     bytes_per_pixel = GL_ALPHA;
   }
+#endif
 }
 
 // -----------------------------------------------------------------------
@@ -797,6 +801,7 @@ void SDLSurface::Observe(NotificationType type,
          it != textures_.end(); ++it) {
       it->forceUnload();
     }
+    textures_.clear();
 
     dirty_rectangle_ = rect();
   }

@@ -45,6 +45,8 @@
  * For comments regarding functions please see the header file.
  */
 
+// TODO(xyz): rework this, very buggy on android
+
 #include "guichan/opengl/openglgraphics.hpp"
 
 #if defined (_WIN32)
@@ -57,8 +59,14 @@
 #define glVertex3i glVertex3f
 #elif defined(__APPLE__)
 #include <OpenGL/gl.h>
+#elif defined(ANDROID)
+#include <GLES/gl.h>
 #else
 #include <GL/gl.h>
+#endif
+
+#ifdef ANDROID
+#define glOrtho glOrthof
 #endif
 
 #include "guichan/exception.hpp"
@@ -69,7 +77,7 @@ namespace gcn
 {
     OpenGLGraphics::OpenGLGraphics()
     {
-        setTargetPlane(640, 480);
+        // setTargetPlane(640, 480);
         mAlpha = false;
     }
 
@@ -84,25 +92,56 @@ namespace gcn
 
     }
 
+    void OpenGLGraphics::pushAttribute(GLenum cap) {
+        if (!glIsEnabled(cap)) {
+            mGlEnabled.push_back(cap);
+            glEnable(cap);
+            std::cout << "enabled " << (int)cap << std::endl;
+        }
+    }
+
+    void OpenGLGraphics::popAttributes() {
+        for (size_t i = 0; i < mGlEnabled.size(); ++i) {
+            // glDisable(mGlEnabled[i]);
+        }
+        mGlEnabled.clear();
+    }
+
     void OpenGLGraphics::_beginDraw()
     {
-        glPushAttrib(
-            GL_COLOR_BUFFER_BIT |
-            GL_CURRENT_BIT |
-            GL_DEPTH_BUFFER_BIT |
-            GL_ENABLE_BIT |
-            GL_FOG_BIT |
-            GL_LIGHTING_BIT |
-            GL_LINE_BIT |
+#if 0
+            // TODO menu kills the game without glPushAttrib
+        // GL_COLOR_BUFFER_BIT
+        pushAttribute(GL_ALPHA_TEST);
+        pushAttribute(GL_BLEND);
+        pushAttribute(GL_DITHER);
+        pushAttribute(GL_COLOR_LOGIC_OP);
+        // GL_DEPTH_BUFFER_BIT
+        pushAttribute(GL_DEPTH_TEST);
+        // GL_FOG_BIT
+        pushAttribute(GL_FOG);
+        /*    GL_ENABLE_BIT | */
+        pushAttribute(GL_COLOR_MATERIAL);
+        pushAttribute(GL_MULTISAMPLE);
+        pushAttribute(GL_SAMPLE_COVERAGE);
+        // GL_LIGHTING_BIT
+        pushAttribute(GL_LIGHTING);
+        // GL_SCISSOR_BIT
+        pushAttribute(GL_SCISSOR_TEST);
+        // GL_TEXTURE_BIT
+        pushAttribute(GL_TEXTURE_2D);
+        // GL_TRANSFORM_BIT
+        pushAttribute(GL_NORMALIZE);
+        pushAttribute(GL_RESCALE_NORMAL);
+            /*GL_LINE_BIT |
             GL_POINT_BIT |
             GL_POLYGON_BIT |
-            GL_SCISSOR_BIT |
             GL_STENCIL_BUFFER_BIT |
-            GL_TEXTURE_BIT |
-            GL_TRANSFORM_BIT |
             GL_POINT_BIT |
             GL_LINE_BIT
-            );
+        // GL_CURRENT_BIT
+            ); */
+#endif
 
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
@@ -123,18 +162,18 @@ namespace gcn
                 -1.0,
                 1.0);
 
-        glDisable(GL_LIGHTING);
+        /*glDisable(GL_LIGHTING);
         glDisable(GL_CULL_FACE);
         glDisable(GL_DEPTH_TEST);
-        glDisable(GL_TEXTURE_2D);
+        glDisable(GL_TEXTURE_2D);*/
 
         glEnable(GL_SCISSOR_TEST);
-        glPointSize(1.0);
-        glLineWidth(1.0);
+        // glPointSize(1.0);
+        // glLineWidth(1.0);
 
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+        // glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
         pushClipArea(Rectangle(0, 0, mWidth, mHeight));
     }
@@ -150,7 +189,7 @@ namespace gcn
         glMatrixMode(GL_PROJECTION);
         glPopMatrix();
 
-        glPopAttrib();
+        // popAttributes();
 
         popClipArea();
     }
@@ -230,6 +269,7 @@ namespace gcn
         }
 
         // Draw a textured quad -- the image
+#if 0
         glBegin(GL_QUADS);
         glTexCoord2f(texX1, texY1);
         glVertex3i(dstX, dstY, 0);
@@ -243,12 +283,36 @@ namespace gcn
         glTexCoord2f(texX2, texY1);
         glVertex3i(dstX + width, dstY, 0);
         glEnd();
-        glDisable(GL_TEXTURE_2D);
+#else
+        GLfloat vtx1[] = {
+          static_cast<GLfloat>(dstX), static_cast<GLfloat>(dstY), 0,
+          static_cast<GLfloat>(dstX), static_cast<GLfloat>(dstY + height), 0,
+          static_cast<GLfloat>(dstX + width), static_cast<GLfloat>(dstY + height), 0,
+          static_cast<GLfloat>(dstX + width), static_cast<GLfloat>(dstY), 0
+        };
+        GLfloat tex1[] = {
+          texX1,texY1,
+          texX1,texY2,
+          texX2,texY2,
+          texX2,texY1
+        };
+
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+        glVertexPointer(3, GL_FLOAT, 0, vtx1);
+        glTexCoordPointer(2, GL_FLOAT, 0, tex1);
+        glDrawArrays(GL_TRIANGLE_FAN,0,4);
+
+        glDisableClientState(GL_VERTEX_ARRAY);
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+#endif
+        // glDisable(GL_TEXTURE_2D);
 
         // Don't disable blending if the color has alpha
         if (!mAlpha)
         {
-            glDisable(GL_BLEND);
+            // glDisable(GL_BLEND);
         }
     }
 
@@ -264,9 +328,11 @@ namespace gcn
         x += top.xOffset;
         y += top.yOffset;
 
+#if 0
         glBegin(GL_POINTS);
         glVertex2i(x, y);
         glEnd();
+#endif
     }
 
     void OpenGLGraphics::drawLine(int x1, int y1, int x2, int y2)
@@ -283,6 +349,7 @@ namespace gcn
         x2 += top.xOffset;
         y2 += top.yOffset;
 
+#if 0
         glBegin(GL_LINES);
         glVertex2f(x1 + 0.375f,
                    y1 + 0.375f);
@@ -299,6 +366,7 @@ namespace gcn
         glVertex2f(x1 + 0.375f,
                    y1 + 0.375f);
         glEnd();
+#endif
     }
 
     void OpenGLGraphics::drawRectangle(const Rectangle& rectangle)
@@ -309,7 +377,7 @@ namespace gcn
         }
 
         const ClipRectangle& top = mClipStack.top();
-
+#if 0
         glBegin(GL_LINE_LOOP);
         glVertex2f(rectangle.x + top.xOffset,
                    rectangle.y + top.yOffset);
@@ -320,6 +388,7 @@ namespace gcn
         glVertex2f(rectangle.x + top.xOffset,
                    rectangle.y + rectangle.height + top.yOffset);
         glEnd();
+#endif
     }
 
     void OpenGLGraphics::fillRectangle(const Rectangle& rectangle)
@@ -331,6 +400,7 @@ namespace gcn
 
         const ClipRectangle& top = mClipStack.top();
 
+#if 0
         glBegin(GL_QUADS);
         glVertex2i(rectangle.x + top.xOffset,
                    rectangle.y + top.yOffset);
@@ -341,6 +411,7 @@ namespace gcn
         glVertex2i(rectangle.x + top.xOffset,
                    rectangle.y + rectangle.height + top.yOffset);
         glEnd();
+#endif
     }
 
     void OpenGLGraphics::setColor(const Color& color)

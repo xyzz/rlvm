@@ -25,12 +25,21 @@
 //
 // -----------------------------------------------------------------------
 
+#ifndef ANDROID
 #include "GL/glew.h"
+#endif
 
 #include "Systems/SDL/SDLUtils.hpp"
 
 #include <SDL/SDL.h>
+
+#ifndef ANDROID
 #include <SDL/SDL_opengl.h>
+#else
+#include <GLES/gl.h>
+#include <android/log.h>
+#endif
+
 #include <string>
 #include <sstream>
 
@@ -45,6 +54,7 @@ using namespace std;
 // -----------------------------------------------------------------------
 
 void ShowGLErrors(void) {
+#ifndef ANDROID
   GLenum error;
   const GLubyte* err_str;
   if ((error = glGetError()) != GL_NO_ERROR) {
@@ -53,14 +63,55 @@ void ShowGLErrors(void) {
     oss << "OpenGL Error: " << (char*)err_str;
     throw SystemError(oss.str());
   }
+#endif
+}
+
+void ShowGLErrors(const std::string s) {
+#ifdef ANDROID
+  std::string error = "";
+  GLenum error_i;
+  do {
+    error_i = glGetError();
+    switch(error_i) {
+    case GL_INVALID_ENUM:
+      error = "GL_INVALID_ENUM";
+      break;
+    case GL_INVALID_VALUE:
+      error = "GL_INVALID_VALUE";
+      break;
+    case GL_INVALID_OPERATION:
+      error = "GL_INVALID_OPERATION";
+      break;
+    case GL_OUT_OF_MEMORY:
+      error = "GL_OUT_OF_MEMORY";
+      break;
+    case GL_STACK_UNDERFLOW:
+      error = "GL_STACK_UNDERFLOW";
+      break;
+    case GL_STACK_OVERFLOW:
+      error = "GL_STACK_OVERFLOW";
+      break;
+    default:
+      error = "";
+    }
+    if (error != "") {
+      __android_log_print(ANDROID_LOG_INFO, "rlvm", "ShowGLErrors: %s", (s + " " + error).c_str());
+    }
+  } while (error_i);
+#endif
 }
 
 // -----------------------------------------------------------------------
 
 bool IsNPOTSafe() {
+  return false;
+#ifdef ANDROID
+  return false;
+#else
   static bool is_safe =
       GLEW_VERSION_2_0 && GLEW_ARB_texture_non_power_of_two;
   return is_safe;
+#endif
 }
 
 int GetMaxTextureSize() {

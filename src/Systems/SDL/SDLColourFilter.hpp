@@ -27,7 +27,11 @@
 #ifndef SRC_SYSTEMS_SDL_SDLCOLOURFILTER_HPP_
 #define SRC_SYSTEMS_SDL_SDLCOLOURFILTER_HPP_
 
+#ifndef ANDROID
 #include <SDL/SDL_opengl.h>
+#else
+#include <GLES/gl.h>
+#endif
 
 #include "Systems/Base/ColourFilter.hpp"
 #include "Systems/Base/Rect.hpp"

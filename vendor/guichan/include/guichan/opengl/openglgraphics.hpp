@@ -48,6 +48,14 @@
 #include "guichan/graphics.hpp"
 #include "guichan/platform.hpp"
 
+#include <vector>
+
+#ifdef ANDROID
+#include <GLES/gl.h>
+#else
+#include <GL/gl.h>
+#endif
+
 namespace gcn
 {
     /**
@@ -122,9 +130,14 @@ namespace gcn
 
 		virtual const Color& getColor() const;
 
+    private:
+        void pushAttribute(GLenum cap);
+        void popAttributes();
+
     protected:
         int mWidth, mHeight;
 		bool mAlpha;
+        std::vector<GLenum> mGlEnabled;
         Color mColor;
     };
 }

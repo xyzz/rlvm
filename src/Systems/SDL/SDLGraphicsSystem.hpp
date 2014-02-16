@@ -36,7 +36,11 @@
 #include "base/notification_registrar.h"
 #include "Systems/Base/GraphicsSystem.hpp"
 
+#ifndef ANDROID
 #include <SDL/SDL_opengl.h>
+#else
+#include <GLES/gl.h>
+#endif
 
 struct SDL_Surface;
 

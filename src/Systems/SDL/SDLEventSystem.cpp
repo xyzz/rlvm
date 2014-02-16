@@ -35,6 +35,11 @@
 #include "Systems/Base/GraphicsSystem.hpp"
 #include "Systems/SDL/SDLSystem.hpp"
 
+#include "log.h"
+
+extern bool global_texture_reload;
+
+
 using std::bind;
 using namespace std::placeholders;
 
@@ -78,8 +83,10 @@ void SDLEventSystem::executeEventSystem(RLMachine& machine) {
       case SDL_MOUSEBUTTONUP: {
         if (raw_handler_)
           raw_handler_->pushInput(event);
-        else
+        else {
+          LOGD("got mouse event\n");
           handleMouseButtonEvent(machine, event);
+        }
         break;
       }
       case SDL_QUIT:

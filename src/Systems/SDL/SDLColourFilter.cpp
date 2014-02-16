@@ -24,14 +24,18 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 // -----------------------------------------------------------------------
 
+#ifndef ANDROID
 #include "GL/glew.h"
+#endif
 
 #include "Systems/SDL/SDLColourFilter.hpp"
 
 #include "Systems/Base/Colour.hpp"
 #include "Systems/Base/GraphicsObject.hpp"
 #include "Systems/SDL/SDLUtils.hpp"
+#ifndef ANDROID
 #include "Systems/SDL/Shaders.hpp"
+#endif
 #include "Systems/SDL/Texture.hpp"
 
 SDLColourFilter::SDLColourFilter()
@@ -48,6 +52,7 @@ SDLColourFilter::~SDLColourFilter() {
 void SDLColourFilter::Fill(const GraphicsObject& go,
                            const Rect& screen_rect,
                            const RGBAColour& colour) {
+#if 0
   if (GLEW_ARB_fragment_shader && GLEW_ARB_multitexture) {
     if (back_texture_id_ == 0) {
       glGenTextures(1, &back_texture_id_);
@@ -106,5 +111,6 @@ void SDLColourFilter::Fill(const GraphicsObject& go,
 
     glUseProgramObjectARB(0);
   }
+#endif
 }
 

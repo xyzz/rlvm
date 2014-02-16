@@ -470,16 +470,20 @@ void GraphicsSystem::setShowWeather(const int in) {
 
 // -----------------------------------------------------------------------
 
+void GraphicsSystem::notifyScreenStateChanged(const int in) {
+  NotificationService::current()->Notify(
+      NotificationType::FULLSCREEN_STATE_CHANGED,
+      Source<GraphicsSystem>(this),
+      Details<const int>(&in));
+}
+
 void GraphicsSystem::setScreenMode(const int in) {
   bool changed = globals_.screen_mode != in;
 
   globals_.screen_mode = in;
 
   if (changed) {
-    NotificationService::current()->Notify(
-        NotificationType::FULLSCREEN_STATE_CHANGED,
-        Source<GraphicsSystem>(this),
-        Details<const int>(&in));
+    notifyScreenStateChanged(in);
   }
 }
 

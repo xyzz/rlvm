@@ -30,7 +30,12 @@
 
 #include <string>
 #include <boost/scoped_array.hpp>
+
+#ifndef ANDROID
 #include <SDL/SDL_opengl.h>
+#else
+#include <GLES/gl.h>
+#endif
 
 struct SDL_Surface;
 class SDLSurface;
