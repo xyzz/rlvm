@@ -319,6 +319,9 @@ SDLGraphicsSystem::SDLGraphicsSystem(System& system, Gameexe& gameexe)
                  Source<GraphicsSystem>(static_cast<GraphicsSystem*>(this)));
 }
 
+#include <android.h>
+extern jobject g_activity_obj;
+
 void SDLGraphicsSystem::setupVideo() {
   // Let's get some video information.
   const SDL_VideoInfo* info = SDL_GetVideoInfo();
@@ -358,6 +361,17 @@ void SDLGraphicsSystem::setupVideo() {
     ss << "Video mode set failed: " << SDL_GetError();
     throw SystemError(ss.str());
   }
+
+#ifdef ANDROID
+  // this is disgusting
+  JNIEnv *env = SDL_ANDROID_JniEnv();
+  jobject obj = SDL_ANDROID_JniVideoObject();
+  jclass clazz = env->FindClass("is/xyz/rlvm/DemoRenderer");
+  jmethodID resizeGLView = env->GetMethodID(clazz, "resizeGLView", "(II)V");
+  jint w = screenSize().width();
+  jint h = screenSize().height();
+  env->CallVoidMethod(obj, resizeGLView, w, h);
+#endif
 
 #if 0
   // Initialize glew

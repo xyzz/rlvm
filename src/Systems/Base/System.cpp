@@ -54,6 +54,10 @@
 #include "Utilities/StringUtilities.hpp"
 #include "libReallive/gameexe.h"
 
+#ifdef ANDROID
+#include "android.h"
+#endif
+
 using namespace std;
 using boost::replace_all;
 using boost::to_lower;
@@ -387,7 +391,7 @@ void System::dumpRenderTree(RLMachine& machine) {
 
 boost::filesystem::path System::getHomeDirectory() {
 #ifdef ANDROID
-  return fs::path("/sdcard/vn/");
+  return fs::path(g_root_path);
 #endif
   string drive, home;
   char *homeptr     = getenv("HOME");

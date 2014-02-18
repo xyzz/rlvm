@@ -31,12 +31,15 @@
 #include <string>
 
 #include <unistd.h>
+
+#ifdef ANDROID
 #include <SDL_android.h>
+#include "GLES/gl.h"
+#endif
 
 #include "AndroidRLVMInstance.hpp"
 
 #include "log.h"
-#include "GLES/gl.h"
 
 using namespace std;
 
@@ -44,9 +47,11 @@ namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
 AndroidRLVMInstance instance;
+std::string g_root_path;
 
 bool background = false;
 
+#ifdef ANDROID
 static void appPutToBackground()
 {
   // TODO(xyz) wtf, this repeatedly gets called
@@ -96,14 +101,32 @@ static void appPutToForeground()
   // Full Brightness, 50% Alpha ( NEW )
   glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
 }
-
+#endif
 
 int main(int argc, char* argv[]) {
   sleep(3);
 
+#ifdef ANDROID
   SDL_ANDROID_SetApplicationPutToBackgroundCallback(&appPutToBackground, &appPutToForeground);
+#endif
 
-  fs::path gamerootPath("/sdcard/vn/");
+  // get path to game, this call is approximately 2x more disgusting than another one
+  JNIEnv *env = SDL_ANDROID_JniEnv();
+  jobject obj = SDL_ANDROID_JniVideoObject();
+  jclass clazz = env->FindClass("is/xyz/rlvm/DemoRenderer");
+  jmethodID methodID = env->GetMethodID(clazz, "getGamepath", "()Ljava/lang/String;");
+
+  jobject result = env->CallObjectMethod(obj, methodID);
+
+  const char* str;
+  jboolean isCopy;
+  str = env->GetStringUTFChars((jstring)result, &isCopy);
+  std::string root_path(str);
+  env->ReleaseStringUTFChars((jstring)result, str);
+
+  g_root_path = root_path;
+
+  fs::path gamerootPath(g_root_path);
 
   instance.Run(gamerootPath);
 
