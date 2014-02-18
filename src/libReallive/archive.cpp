@@ -98,11 +98,7 @@ void Archive::readTOC() {
 void Archive::readOverrides() {
   // Iterate over all files in the directory and override the table of contents
   // if there is a free SEENXXXX.TXT file.
-#if 1
   fs::path seen_dir = fs::path(name).branch_path();
-#else
-  fs::path seen_dir("/sdcard/vn/");
-#endif
   fs::directory_iterator end;
   for (fs::directory_iterator it(seen_dir); it != end; ++it) {
     string filename = it->path().filename().string();
