@@ -46,7 +46,7 @@ const char* western_platform_fonts[] = {
 #else
   "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf",
 #endif
-  "/sdcard/vn/DejaVuSans.ttf",
+  "DroidSansFallbackFull.ttf",
   NULL
 };
 
@@ -71,6 +71,7 @@ const char* ja_platform_fonts[] = {
   "/usr/share/fonts/truetype/ttf-japanese-gothic.ttf",
   "/etc/alternatives/fonts-japanese-gothic.ttf",
 #endif
+  "DroidSansFallbackFull.ttf",
   NULL
 };
 
@@ -115,7 +116,7 @@ fs::path findFontFile(System& system) {
       return gameFont;
   }
 
-  if (true || system.useWesternFont()) {
+  if (system.useWesternFont()) {
     // Try to look up a western alternative font.
     for (const char** file = western_platform_fonts; *file; ++file) {
       if (fs::exists(*file))
