@@ -49,25 +49,19 @@ namespace fs = boost::filesystem;
 AndroidRLVMInstance instance;
 std::string g_root_path;
 
-bool background = false;
+bool g_background = false;
 
 #ifdef ANDROID
 static void appPutToBackground()
 {
   // TODO(xyz) wtf, this repeatedly gets called
-  if (background) {
-    usleep(100);
-    return;
-  }
-  background = true;
-  LOGD("got put to background\n");
+  g_background = true;
   SDL_ANDROID_PauseAudioPlayback();
 }
 
 static void appPutToForeground()
 {
-  background = false;
-  LOGD("got put to foreground\n");
+  g_background = false;
   instance.ReloadAllTextures();
   SDL_ANDROID_ResumeAudioPlayback();
 
@@ -104,8 +98,6 @@ static void appPutToForeground()
 #endif
 
 int main(int argc, char* argv[]) {
-  sleep(3);
-
 #ifdef ANDROID
   SDL_ANDROID_SetApplicationPutToBackgroundCallback(&appPutToBackground, &appPutToForeground);
 #endif

@@ -50,6 +50,10 @@
 
 #include "log.h"
 
+#include "android.h"
+
+#include <unistd.h>
+
 using namespace std;
 
 namespace fs = boost::filesystem;
@@ -161,6 +165,12 @@ void RLVMInstance::Run(const boost::filesystem::path& gamerootPath) {
       Sys_load()(rlmachine, load_save_);
 
     while (!rlmachine.halted()) {
+      if (g_background) {
+        // do nothing when sent to background
+        usleep(900000);
+        SDL_Flip(SDL_GetVideoSurface());
+        continue;
+      }
       if (global_texture_reload) {
         LOGD("reloading all textures\n");
         sdlSystem.graphics().notifyScreenStateChanged(0);
