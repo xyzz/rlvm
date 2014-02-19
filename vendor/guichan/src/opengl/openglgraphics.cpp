@@ -173,7 +173,7 @@ namespace gcn
 
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        // glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
         pushClipArea(Rectangle(0, 0, mWidth, mHeight));
     }
@@ -190,6 +190,8 @@ namespace gcn
         glPopMatrix();
 
         // popAttributes();
+
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
         popClipArea();
     }
