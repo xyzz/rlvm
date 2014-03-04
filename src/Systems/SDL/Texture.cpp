@@ -183,9 +183,9 @@ Texture::Texture(render_to_texture, int width, int height)
   texture_height_ = SafeSize(logical_height_);
 
   // This may fail.
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
                texture_width_, texture_height_,
-               0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+               0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
   DebugShowGLErrors();
 
   glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, logical_width_,
