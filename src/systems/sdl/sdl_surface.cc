@@ -27,7 +27,7 @@
 
 #include "systems/sdl/sdl_surface.h"
 
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -176,7 +176,7 @@ void TransformSurface(SDLSurface* our_surface,
 
 SDL_Surface* buildNewSurface(const Size& size) {
   // Create an empty surface
-  SDL_Surface* tmp = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_SRCALPHA,
+  SDL_Surface* tmp = SDL_CreateRGBSurface(0,
                                           size.width(),
                                           size.height(),
                                           DefaultBpp,
@@ -404,10 +404,10 @@ void SDLSurface::BlitToSurface(Surface& dest_surface,
     pygame_stretch(src_image, tmp);
 
     if (use_src_alpha) {
-      if (SDL_SetAlpha(tmp, SDL_SRCALPHA, alpha))
+      if (SDL_SetSurfaceAlphaMod(tmp, alpha))
         reportSDLError("SDL_SetAlpha", "SDLGraphicsSystem::blitSurfaceToDC()");
     } else {
-      if (SDL_SetAlpha(tmp, 0, 0))
+      if (SDL_SetSurfaceBlendMode(surface_, SDL_BLENDMODE_NONE))
         reportSDLError("SDL_SetAlpha", "SDLGraphicsSystem::blitSurfaceToDC()");
     }
 
@@ -418,10 +418,10 @@ void SDLSurface::BlitToSurface(Surface& dest_surface,
     SDL_FreeSurface(src_image);
   } else {
     if (use_src_alpha) {
-      if (SDL_SetAlpha(surface_, SDL_SRCALPHA, alpha))
+      if (SDL_SetSurfaceAlphaMod(surface_, alpha))
         reportSDLError("SDL_SetAlpha", "SDLGraphicsSystem::blitSurfaceToDC()");
     } else {
-      if (SDL_SetAlpha(surface_, 0, 0))
+      if (SDL_SetSurfaceBlendMode(surface_, SDL_BLENDMODE_NONE))
         reportSDLError("SDL_SetAlpha", "SDLGraphicsSystem::blitSurfaceToDC()");
     }
 
@@ -711,8 +711,8 @@ Surface* SDLSurface::Clone() const {
 
   // Disable alpha blending because we're copying onto a blank (and
   // blank alpha!) surface
-  if (SDL_SetAlpha(surface_, 0, 0))
-    reportSDLError("SDL_SetAlpha", "SDLGraphicsSystem::blitSurfaceToDC()");
+  if (SDL_SetSurfaceBlendMode(surface_, SDL_BLENDMODE_NONE))
+    reportSDLError("SDL_SetSurfaceBlendMode", "SDLGraphicsSystem::blitSurfaceToDC()");
 
   if (SDL_BlitSurface(surface_, NULL, tmp_surface, NULL))
     reportSDLError("SDL_BlitSurface", "SDLSurface::clone()");
@@ -795,7 +795,7 @@ std::shared_ptr<Surface> SDLSurface::ClipAsColorMask(const Rect& clip_rect,
     reportSDLError("SDL_BlitSurface", function_name);
 
   Uint32 colour = SDL_MapRGB(tmp_surface->format, r, g, b);
-  if (SDL_SetColorKey(tmp_surface, SDL_SRCCOLORKEY, colour))
+  if (SDL_SetColorKey(tmp_surface, SDL_TRUE, colour))
     reportSDLError("SDL_SetAlpha", function_name);
 
   // The OpenGL pieces don't know what to do an image formatted to

@@ -242,7 +242,7 @@ VerifyLibrary(config, 'sndfile', 'sndfile.h')
 # entrypoint, and the CheckXXX tests don't allow me a way to inject "#undef
 # main" before I declare the main() function.
 if env['PLATFORM'] != 'darwin':
-  VerifyLibrary(config, 'SDL', 'SDL/SDL.h')
+  VerifyLibrary(config, 'SDL2', 'SDL2/SDL.h')
 else:
   print "Can't properly detect SDL under OSX. Assuming you have the libraries."
 
@@ -259,18 +259,18 @@ local_sdl_libraries = [
     "function" : 'glewInit();'
   },
   {
-    'include'  : 'SDL/SDL_ttf.h',
-    'library'  : 'SDL_ttf',
+    'include'  : 'SDL2/SDL_ttf.h',
+    'library'  : 'SDL2_ttf',
     'function' : 'TTF_Init();'
   },
   {
-    'include'  : 'SDL/SDL_mixer.h',
-    'library'  : 'SDL_mixer',
+    'include'  : 'SDL2/SDL_mixer.h',
+    'library'  : 'SDL2_mixer',
     'function' : ''
   },
   {
-      'include'  : 'SDL/SDL_image.h',
-      'library'  : 'SDL_image',
+      'include'  : 'SDL2/SDL_image.h',
+      'library'  : 'SDL2_image',
       'function' : ''
   }
 ]
@@ -283,7 +283,7 @@ if not config.CheckGuichan():
   subcomponents.append("guichan")
 
 # Get the configuration from sdl and freetype
-env.ParseConfig("sdl-config --cflags")
+env.ParseConfig("sdl2-config --cflags")
 env.ParseConfig("freetype-config --cflags --libs")
 
 env = config.Finish()

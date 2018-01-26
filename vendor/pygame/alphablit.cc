@@ -21,7 +21,7 @@
     pete@shinners.org
 */
 
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 
 
 #define PYGAME_BLEND_ADD  0x1
@@ -48,7 +48,6 @@ typedef struct {
         SDL_PixelFormat *dst;
 } SDL_BlitInfo;
 static void alphablit_alpha(SDL_BlitInfo *info);
-static void alphablit_colorkey(SDL_BlitInfo *info);
 static void alphablit_solid(SDL_BlitInfo *info);
 static void blit_blend_THEM(SDL_BlitInfo *info, int the_args);
 
@@ -102,13 +101,13 @@ static int SoftBlitPyGame(SDL_Surface *src, SDL_Rect *srcrect,
                 SDL_BlitInfo info;
 
                 /* Set up the blit information */
-                info.s_pixels = (Uint8 *)src->pixels + src->offset +
+                info.s_pixels = (Uint8 *)src->pixels +
                                 (Uint16)srcrect->y*src->pitch +
                                 (Uint16)srcrect->x*src->format->BytesPerPixel;
                 info.s_width = srcrect->w;
                 info.s_height = srcrect->h;
                 info.s_skip=src->pitch-info.s_width*src->format->BytesPerPixel;
-                info.d_pixels = (Uint8 *)dst->pixels + dst->offset +
+                info.d_pixels = (Uint8 *)dst->pixels +
                                 (Uint16)dstrect->y*dst->pitch +
                                 (Uint16)dstrect->x*dst->format->BytesPerPixel;
                 info.d_width = dstrect->w;
@@ -120,10 +119,8 @@ static int SoftBlitPyGame(SDL_Surface *src, SDL_Rect *srcrect,
                 switch(the_args) {
                     case 0:
                     {
-                        if(src->flags&SDL_SRCALPHA && src->format->Amask)
+                        if(src->format->Amask)
                             alphablit_alpha(&info);
-                        else if(src->flags & SDL_SRCCOLORKEY)
-                            alphablit_colorkey(&info);
                         else
                             alphablit_solid(&info);
                         break;
@@ -500,41 +497,6 @@ static void alphablit_alpha(SDL_BlitInfo *info)
         }
 }
 
-static void alphablit_colorkey(SDL_BlitInfo *info)
-{
-        int n;
-        int width = info->d_width;
-        int height = info->d_height;
-        Uint8 *src = info->s_pixels;
-        int srcskip = info->s_skip;
-        Uint8 *dst = info->d_pixels;
-        int dstskip = info->d_skip;
-        SDL_PixelFormat *srcfmt = info->src;
-        SDL_PixelFormat *dstfmt = info->dst;
-        int srcbpp = srcfmt->BytesPerPixel;
-        int dstbpp = dstfmt->BytesPerPixel;
-        int dR, dG, dB, dA, sR, sG, sB, sA;
-        int alpha = srcfmt->alpha;
-        Uint32 colorkey = srcfmt->colorkey;
-
-        while ( height-- )
-        {
-            for(n=width; n>0; --n)
-            {
-                Uint32 pixel;
-                DISEMBLE_RGBA(dst, dstbpp, dstfmt, pixel, dR, dG, dB, dA);
-                DISEMBLE_RGBA(src, srcbpp, srcfmt, pixel, sR, sG, sB, sA);
-                sA = (pixel == colorkey) ? 0 : alpha;
-                ALPHA_BLEND(sR, sG, sB, sA, dR, dG, dB, dA);
-                ASSEMBLE_RGBA(dst, dstbpp, dstfmt, dR, dG, dB, dA);
-                src += srcbpp;
-                dst += dstbpp;
-            }
-            src += srcskip;
-            dst += dstskip;
-        }
-}
-
 
 static void alphablit_solid(SDL_BlitInfo *info)
 {
@@ -550,7 +512,7 @@ static void alphablit_solid(SDL_BlitInfo *info)
         int srcbpp = srcfmt->BytesPerPixel;
         int dstbpp = dstfmt->BytesPerPixel;
         int dR, dG, dB, dA, sR, sG, sB, sA;
-        int alpha = srcfmt->alpha;
+        int alpha = 255;
 
         while ( height-- )
         {

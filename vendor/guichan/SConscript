@@ -62,4 +62,4 @@ component_env.StaticLibrary('libguichan', libguichan_files)
 component_env.Install('$LIBRARY_DIR', 'libguichan.a')
 
 # Register the library with the system
-env.AddStaticLibraryTo("guichan", "SDL")
+env.AddStaticLibraryTo("guichan", "SDL2")

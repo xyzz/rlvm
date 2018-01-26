@@ -145,20 +145,7 @@ namespace gcn
             }
         }
 
-        SDL_Surface *tmp;
-
-        if (hasAlpha)
-        {
-            tmp = SDL_DisplayFormatAlpha(mSurface);
-            SDL_FreeSurface(mSurface);
-            mSurface = NULL;
-        }
-        else
-        {
-            tmp = SDL_DisplayFormat(mSurface);
-            SDL_FreeSurface(mSurface);
-            mSurface = NULL;
-        }
+        SDL_Surface *tmp = mSurface;
 
         if (tmp == NULL)
         {
@@ -167,12 +154,8 @@ namespace gcn
 
         if (hasPink)
         {
-            SDL_SetColorKey(tmp, SDL_SRCCOLORKEY,
+            SDL_SetColorKey(tmp, SDL_TRUE,
                             SDL_MapRGB(tmp->format,255,0,255));
-        }
-        if (hasAlpha)
-        {
-            SDL_SetAlpha(tmp, SDL_SRCALPHA, 255);
         }
 
         mSurface = tmp;

@@ -29,11 +29,11 @@
 
 #include "systems/sdl/sdl_graphics_system.h"
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_opengl.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_opengl.h>
 
 #if !defined(__APPLE__) && !defined(_WIN32)
-#include <SDL/SDL_image.h>
+#include <SDL2/SDL_image.h>
 #include "../resources/48/rlvm_icon_48.xpm"
 #endif
 
@@ -149,7 +149,7 @@ void SDLGraphicsSystem::EndFrame() {
 
   // Swap the buffers
   glFlush();
-  SDL_GL_SwapBuffers();
+  SDL_GL_SwapWindow(screen_);
   ShowGLErrors();
 }
 
@@ -188,7 +188,7 @@ void SDLGraphicsSystem::RedrawLastFrame() {
     glFlush();
 
     // Swap the buffers
-    SDL_GL_SwapBuffers();
+    SDL_GL_SwapWindow(screen_);
     ShowGLErrors();
   }
 }
@@ -251,9 +251,9 @@ SDLGraphicsSystem::SDLGraphicsSystem(System& system, Gameexe& gameexe)
   SDL_Surface* icon = IMG_ReadXPMFromArray(rlvm_icon_48);
   if (icon) {
     SDL_SetColorKey(icon,
-                    SDL_SRCCOLORKEY,
+                    SDL_TRUE,
                     SDL_MapRGB(icon->format, 255, 255, 255));
-    SDL_WM_SetIcon(icon, NULL);
+    SDL_SetWindowIcon(screen_, icon);
     SDL_FreeSurface(icon);
   }
 #endif
@@ -271,26 +271,14 @@ SDLGraphicsSystem::SDLGraphicsSystem(System& system, Gameexe& gameexe)
 }
 
 void SDLGraphicsSystem::SetupVideo() {
-  // Let's get some video information.
-  const SDL_VideoInfo* info = SDL_GetVideoInfo();
-  SDL_WM_SetCaption("rlvm", "rlvm");
-
-  if (!info) {
-    std::ostringstream ss;
-    ss << "Video query failed: " << SDL_GetError();
-    throw SystemError(ss.str());
-  }
-
-  int bpp = info->vfmt->BitsPerPixel;
+  SDL_SetWindowTitle(screen_, "rlvm");
 
   // the flags to pass to SDL_SetVideoMode
-  int video_flags;
-  video_flags = SDL_OPENGL;            // Enable OpenGL in SDL
-  video_flags |= SDL_GL_DOUBLEBUFFER;  // Enable double buffering
-  video_flags |= SDL_SWSURFACE;
+  int video_flags = 0;
+  video_flags |= SDL_WINDOW_OPENGL;            // Enable OpenGL in SDL
 
   if (screen_mode() == 0)
-    video_flags |= SDL_FULLSCREEN;
+    video_flags |= SDL_WINDOW_FULLSCREEN;
 
   // Sets up OpenGL double buffering
   SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
@@ -299,8 +287,9 @@ void SDLGraphicsSystem::SetupVideo() {
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
   // Set the video mode
-  if ((screen_ = SDL_SetVideoMode(
-           screen_size().width(), screen_size().height(), bpp, video_flags)) ==
+  if ((screen_ = SDL_CreateWindow("rlvm",
+           SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+           screen_size().width(), screen_size().height(), video_flags)) ==
       0) {
     // This could happen for a variety of reasons,
     // including DISPLAY not being set, the specified
@@ -309,6 +298,7 @@ void SDLGraphicsSystem::SetupVideo() {
     ss << "Video mode set failed: " << SDL_GetError();
     throw SystemError(ss.str());
   }
+  SDL_GL_CreateContext(screen_);
 
   // Initialize glew
   GLenum err = glewInit();
@@ -415,7 +405,7 @@ void SDLGraphicsSystem::SetWindowTitle() {
   // don't do this unnecessarily.
   std::string new_caption = oss.str();
   if (new_caption != currently_set_title_) {
-    SDL_WM_SetCaption(new_caption.c_str(), NULL);
+    SDL_SetWindowTitle(screen_, new_caption.c_str());
     currently_set_title_ = new_caption;
   }
 }
@@ -539,21 +529,7 @@ static SDL_Surface* newSurfaceFromRGBAData(int w,
                                               DefaultBmask,
                                               amask);
 
-  // We now need to convert this surface to a format suitable for use across
-  // the rest of the program. We can't (regretfully) rely on
-  // SDL_DisplayFormat[Alpha] to decide on a format that we can send to OpenGL
-  // (see some Intel macs) so use convert surface to a pixel order our data
-  // correctly while still using the appropriate alpha flags. So use the above
-  // format with only the flags that would have been set by
-  // SDL_DisplayFormat[Alpha].
-  Uint32 flags;
-  if (with_mask == ALPHA_MASK) {
-    flags = tmp->flags & (SDL_SRCALPHA | SDL_RLEACCELOK);
-  } else {
-    flags = tmp->flags & (SDL_SRCCOLORKEY | SDL_SRCALPHA | SDL_RLEACCELOK);
-  }
-
-  SDL_Surface* surf = SDL_ConvertSurface(tmp, tmp->format, flags);
+  SDL_Surface* surf = SDL_ConvertSurface(tmp, tmp->format, 0);
   SDL_FreeSurface(tmp);
   return surf;
 }

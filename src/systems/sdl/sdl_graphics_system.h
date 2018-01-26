@@ -28,7 +28,8 @@
 #ifndef SRC_SYSTEMS_SDL_SDL_GRAPHICS_SYSTEM_H_
 #define SRC_SYSTEMS_SDL_SDL_GRAPHICS_SYSTEM_H_
 
-#include <SDL/SDL_opengl.h>
+#include <SDL2/SDL_opengl.h>
+#include <SDL2/SDL_video.h>
 
 #include <memory>
 #include <set>
@@ -117,7 +118,7 @@ class SDLGraphicsSystem : public GraphicsSystem, public NotificationObserver {
 
   // ---------------------------------------------------------------------
 
-  SDL_Surface* screen_;
+  SDL_Window* screen_;
 
   std::shared_ptr<SDLSurface> haikei_;
   std::shared_ptr<SDLSurface> display_contexts_[16];

@@ -27,7 +27,7 @@
 
 #include "systems/sdl/sdl_event_system.h"
 
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 
 #include <functional>
 
@@ -87,15 +87,11 @@ void SDLEventSystem::ExecuteEventSystem(RLMachine& machine) {
       case SDL_QUIT:
         machine.Halt();
         break;
-      case SDL_ACTIVEEVENT:
+      case SDL_WINDOWEVENT:
         if (raw_handler_)
           raw_handler_->pushInput(event);
         HandleActiveEvent(machine, event);
         break;
-      case SDL_VIDEOEXPOSE: {
-        machine.system().graphics().ForceRefresh();
-        break;
-      }
     }
   }
 }
@@ -187,7 +183,7 @@ void SDLEventSystem::HandleKeyDown(RLMachine& machine, SDL_Event& event) {
     case SDLK_RETURN:
     case SDLK_f: {
       if ((event.key.keysym.mod & KMOD_ALT) ||
-          (event.key.keysym.mod & KMOD_META)) {
+          (event.key.keysym.mod & KMOD_GUI)) {
         machine.system().graphics().ToggleFullscreen();
 
         // Stop processing because we don't want to Dispatch this event, which
@@ -266,12 +262,12 @@ void SDLEventSystem::HandleMouseButtonEvent(RLMachine& machine,
       case SDL_BUTTON_MIDDLE:
         button = MOUSE_MIDDLE;
         break;
-      case SDL_BUTTON_WHEELUP:
-        button = MOUSE_WHEELUP;
-        break;
-      case SDL_BUTTON_WHEELDOWN:
-        button = MOUSE_WHEELDOWN;
-        break;
+      // case SDL_BUTTON_WHEELUP: TODO(xyz)
+      //   button = MOUSE_WHEELUP;
+      //   break;
+      // case SDL_BUTTON_WHEELDOWN:
+      //   button = MOUSE_WHEELDOWN;
+      //   break;
       default:
         break;
     }
@@ -283,17 +279,21 @@ void SDLEventSystem::HandleMouseButtonEvent(RLMachine& machine,
 }
 
 void SDLEventSystem::HandleActiveEvent(RLMachine& machine, SDL_Event& event) {
-  if (event.active.state & SDL_APPINPUTFOCUS) {
+  if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
     // Assume the mouse is inside the window. Actually checking the mouse
     // state doesn't work in the case where we mouse click on another window
     // that's partially covered by rlvm's window and then alt-tab back.
     mouse_inside_window_ = true;
+  } else if (event.window.event == SDL_WINDOWEVENT_ENTER) {
+    mouse_inside_window_ = true;
+  } else if (event.window.event == SDL_WINDOWEVENT_LEAVE) {
+    mouse_inside_window_ = false;
+  }
 
-    machine.system().graphics().MarkScreenAsDirty(GUT_MOUSE_MOTION);
-  } else if (event.active.state & SDL_APPMOUSEFOCUS) {
-    mouse_inside_window_ = event.active.gain == 1;
+  // Force a mouse refresh:
+  machine.system().graphics().MarkScreenAsDirty(GUT_MOUSE_MOTION);
 
-    // Force a mouse refresh:
-    machine.system().graphics().MarkScreenAsDirty(GUT_MOUSE_MOTION);
+  if (event.window.event == SDL_WINDOWEVENT_EXPOSED) {
+    machine.system().graphics().ForceRefresh();
   }
 }

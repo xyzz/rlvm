@@ -47,7 +47,7 @@
 
 #include "guichan/sdl/sdlimage.hpp"
 
-#include "SDL/SDL_image.h"
+#include "SDL2/SDL_image.h"
 
 #include <cassert>
 
