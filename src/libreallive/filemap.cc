@@ -87,7 +87,7 @@ void Mapping::mopen() {
       throw Error("Cannot create empty file");
     len = msz_;
   } else {
-    len = std::max(msz_, st.st_size);
+    len = std::max((long long)msz_, (long long)st.st_size);
   }
   fp = open(fn_.c_str(), O_BINARY | (mode_ == Read ? O_RDONLY : O_RDWR), 0644);
   if (fp == INVALID_HANDLE_VALUE)

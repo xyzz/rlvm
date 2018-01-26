@@ -25,7 +25,13 @@
 //
 // -----------------------------------------------------------------------
 
+#ifndef __ANDROID__
 #include "GL/glew.h"
+#else
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
+#include <GL/glu.h>
+#endif
 
 #include "systems/sdl/sdl_utils.h"
 
@@ -56,8 +62,12 @@ void ShowGLErrors(void) {
 // -----------------------------------------------------------------------
 
 bool IsNPOTSafe() {
+#ifdef __ANDROID__
+  return false;
+#else
   static bool is_safe = GLEW_VERSION_2_0 && GLEW_ARB_texture_non_power_of_two;
   return is_safe;
+#endif
 }
 
 int GetMaxTextureSize() {

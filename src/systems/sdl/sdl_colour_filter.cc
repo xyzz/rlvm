@@ -24,7 +24,12 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 // -----------------------------------------------------------------------
 
+#ifndef __ANDROID__
 #include "GL/glew.h"
+#else
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
+#endif
 
 #include "systems/sdl/sdl_colour_filter.h"
 
@@ -45,7 +50,12 @@ SDLColourFilter::~SDLColourFilter() {
 void SDLColourFilter::Fill(const GraphicsObject& go,
                            const Rect& screen_rect,
                            const RGBAColour& colour) {
-  if (GLEW_ARB_fragment_shader && GLEW_ARB_multitexture) {
+#ifdef __ANDROID__
+  bool supported = true;
+#else
+  bool supported = GLEW_ARB_fragment_shader && GLEW_ARB_multitexture;
+#endif
+  if (supported) {
     if (back_texture_id_ == 0) {
       glGenTextures(1, &back_texture_id_);
       glBindTexture(GL_TEXTURE_2D, back_texture_id_);

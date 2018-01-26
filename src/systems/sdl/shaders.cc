@@ -24,7 +24,12 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 // -----------------------------------------------------------------------
 
+#ifndef __ANDROID__
 #include "GL/glew.h"
+#else
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
+#endif
 
 #ifndef NDEBUG
 #include <iostream>

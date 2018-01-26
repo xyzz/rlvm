@@ -25,7 +25,12 @@
 //
 // -----------------------------------------------------------------------
 
+#ifndef __ANDROID__
 #include "GL/glew.h"
+#else
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
+#endif
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
@@ -350,7 +355,12 @@ void Texture::RenderToScreenAsColorMask(const Rect& src,
                                         const RGBAColour& rgba,
                                         int filter) {
   if (filter == 0) {
-    if (GLEW_ARB_fragment_shader && GLEW_ARB_multitexture) {
+    #ifdef __ANDROID__
+    bool supported = true;
+    #else
+    bool supported = GLEW_ARB_fragment_shader && GLEW_ARB_multitexture;
+    #endif
+    if (supported) {
       render_to_screen_as_colour_mask_subtractive_glsl(src, dst, rgba);
     } else {
       render_to_screen_as_colour_mask_subtractive_fallback(src, dst, rgba);
@@ -647,9 +657,14 @@ void Texture::RenderToScreenAsObject(const GraphicsObject& go,
     // in a shader if available. It's costly enough that we make sure we need
     // to use it.
     bool using_shader = false;
+    #ifdef __ANDROID__
+    bool supported = true;
+    #else
+    bool supported = GLEW_ARB_fragment_shader && GLEW_ARB_multitexture;
+    #endif
     if ((go.light() || go.tint() != RGBColour::Black() ||
          go.colour() != RGBAColour::Clear() || go.mono() || go.invert()) &&
-        GLEW_ARB_fragment_shader && GLEW_ARB_multitexture) {
+        supported) {
       // Image
       glActiveTexture(GL_TEXTURE0_ARB);
       glEnable(GL_TEXTURE_2D);

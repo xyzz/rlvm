@@ -25,7 +25,9 @@
 //
 // -----------------------------------------------------------------------
 
+#ifndef __ANDROID__
 #include "GL/glew.h"
+#endif
 
 #include "systems/sdl/sdl_graphics_system.h"
 
@@ -300,6 +302,7 @@ void SDLGraphicsSystem::SetupVideo() {
   }
   SDL_GL_CreateContext(screen_);
 
+#ifndef __ANDROID__
   // Initialize glew
   GLenum err = glewInit();
   if (GLEW_OK != err) {
@@ -307,6 +310,7 @@ void SDLGraphicsSystem::SetupVideo() {
     oss << "Failed to initialize GLEW: " << glewGetErrorString(err);
     throw SystemError(oss.str());
   }
+#endif
 
   glEnable(GL_TEXTURE_2D);
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);

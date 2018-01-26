@@ -16,6 +16,8 @@ AddOption('--pprof', action='store_true',
           help='Build with Google\'s performance tools.')
 AddOption('--fullstatic', action='store_true',
           help='Builds a static binary, linking in all libraries.')
+AddOption('--android', action='store_true',
+          help='Cross-compile for Android')
 
 # Set libraries used by all configurations and all binaries in rlvm.
 env = Environment(
@@ -38,9 +40,6 @@ env = Environment(
   CPPDEFINES = [
     "HAVE_CONFIG_H",
 
-    # We use gettext for translations.
-    "ENABLE_NLS",
-
     # This prevents conflicts between SDL and GLEW. I shouldn't have to do
     # this, but the SDL_opengl.h and glew.h differ in const correctness...
     "NO_SDL_GLEXT"
@@ -62,6 +61,20 @@ env = Environment(
   # Whether we build the test binary that requires lua.
   BUILD_LUA_TESTS = False,
 )
+
+if not GetOption("android"):
+  # We use gettext for translations.
+  env["CPPDEFINES"].append("ENABLE_NLS")
+
+if GetOption("android"):
+  print("-- Cross-compile ---")
+  for name in ["CC", "CXX"]:
+    value = os.environ.get(name)
+    if value:
+      print("Set env[{}] to {}".format(name, value))
+      env[name] = value
+  env["ENV"] = os.environ
+  print("--------------------")
 
 if env['PLATFORM'] == "darwin":
   env.Append(
@@ -153,14 +166,14 @@ def CheckBoost(context, version):
       version_n += int(v_arr[2])
 
   context.Message('Checking for Boost version >= %s... ' % (version))
-  ret = context.TryRun("""
+  ret = context.TryLink("""
     #include <boost/version.hpp>
 
     int main()
     {
         return BOOST_VERSION >= %d ? 0 : 1;
     }
-    """ % version_n, '.cpp')[0]
+    """ % version_n, '.cpp')
   context.Result(ret)
   return ret
 
@@ -185,6 +198,8 @@ int main(int argc, char **argv) {
   return ret
 
 def VerifyLibrary(config, library, header):
+  if GetOption('android'):
+    return
   if not config.CheckLibWithHeader(library, header, "c"):
     if config.CheckLib(library):
       print "You have " + library + " installed, but the development headers aren't installed."
@@ -199,7 +214,6 @@ def CheckForSystemLibrary(config, library_dict, componentlist):
   custom handling on build failure, where instead we add the source to the
   dependency graph instead.
   """
-
   res = None
   if not GetOption("fullstatic"):
       res = config.CheckLibWithHeader(library_dict['library'],
@@ -228,7 +242,9 @@ if not config.CheckBoost('1.40'):
   print "Boost version >= 1.40 needed to compile rlvm!"
   Exit(1)
 
-VerifyLibrary(config, 'pthread', 'pthread.h')
+# android doesn't need to explicitly link pthread
+if not GetOption("android"):
+  VerifyLibrary(config, 'pthread', 'pthread.h')
 VerifyLibrary(config, 'ogg', 'ogg/ogg.h')
 VerifyLibrary(config, 'vorbis', 'vorbis/codec.h')
 VerifyLibrary(config, 'vorbisfile', 'vorbis/vorbisfile.h')
@@ -380,38 +396,39 @@ if env['PLATFORM'] == 'darwin':
                  variant_dir="$BUILD_DIR/",
                  duplicate=0,
                  exports='env')
-else:
+elif not GetOption('android'):
   env.SConscript("SConscript.gtk",
                  variant_dir="$BUILD_DIR/",
                  duplicate=0,
                  exports='env')
 
-# Copy the platform independent SEEN.TXT files to output (we no longer depend
-# on rldev because I can no longer reliably compile it).
-env.SConscript("test/SConscript.rlc",
-               variant_dir="build/test",
-               duplicate=0,
-               exports='env')
+if not GetOption("android"):
+  # Copy the platform independent SEEN.TXT files to output (we no longer depend
+  # on rldev because I can no longer reliably compile it).
+  env.SConscript("test/SConscript.rlc",
+                 variant_dir="build/test",
+                 duplicate=0,
+                 exports='env')
 
-# Build the rlvmTests binary that uses those SEEN.TXT files.
-env.SConscript("SConscript.test",
-               variant_dir="$BUILD_DIR/",
-               duplicate=0,
-               exports='env')
-
-env.SConscript("SConscript.luarlvm",
-               variant_dir="$BUILD_DIR/",
-               duplicate=0,
-               exports='env')
-
-if GetOption("coverage"):
-  env.SConscript("SConscript.coverage",
+  # Build the rlvmTests binary that uses those SEEN.TXT files.
+  env.SConscript("SConscript.test",
                  variant_dir="$BUILD_DIR/",
                  duplicate=0,
                  exports='env')
 
-# In addition to all that, we also want to build the translation files.
-env.Command("build/locale/ja/LC_MESSAGES/rlvm.mo",
-            "po/ja.po",
-            ["mkdir -p build/locale/ja/LC_MESSAGES/",
-             "msgfmt -o build/locale/ja/LC_MESSAGES/rlvm.mo po/ja.po"])
+  env.SConscript("SConscript.luarlvm",
+                 variant_dir="$BUILD_DIR/",
+                 duplicate=0,
+                 exports='env')
+
+  if GetOption("coverage"):
+    env.SConscript("SConscript.coverage",
+                   variant_dir="$BUILD_DIR/",
+                   duplicate=0,
+                   exports='env')
+
+  # In addition to all that, we also want to build the translation files.
+  env.Command("build/locale/ja/LC_MESSAGES/rlvm.mo",
+              "po/ja.po",
+              ["mkdir -p build/locale/ja/LC_MESSAGES/",
+               "msgfmt -o build/locale/ja/LC_MESSAGES/rlvm.mo po/ja.po"])
