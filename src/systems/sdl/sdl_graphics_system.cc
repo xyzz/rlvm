@@ -277,8 +277,6 @@ SDLGraphicsSystem::SDLGraphicsSystem(System& system, Gameexe& gameexe)
 }
 
 void SDLGraphicsSystem::SetupVideo() {
-  SDL_SetWindowTitle(screen_, "rlvm");
-
   // the flags to pass to SDL_SetVideoMode
   int video_flags = 0;
   video_flags |= SDL_WINDOW_OPENGL;            // Enable OpenGL in SDL
@@ -304,6 +302,8 @@ void SDLGraphicsSystem::SetupVideo() {
     ss << "Video mode set failed: " << SDL_GetError();
     throw SystemError(ss.str());
   }
+
+  SDL_SetWindowTitle(screen_, "rlvm");
 
 #ifdef __ANDROID__
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
