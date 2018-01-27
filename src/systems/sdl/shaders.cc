@@ -43,6 +43,7 @@
 namespace {
 
 const char kColorMaskShader[] =
+    "varying vec4 vColor;\n"
     "uniform sampler2D current_values;\n"
     "uniform sampler2D mask;\n"
     ""
@@ -50,12 +51,13 @@ const char kColorMaskShader[] =
     "{"
     "vec4 bg_colour = texture2D(current_values, gl_TexCoord[0].st);"
     "vec4 mask_vector = texture2D(mask, gl_TexCoord[1].st);"
-    "float mask_colour = clamp(mask_vector.a * gl_Color.a, 0.0, 1.0);"
-    "gl_FragColor = clamp(bg_colour - mask_colour + gl_Color * mask_colour, "
+    "float mask_colour = clamp(mask_vector.a * vColor.a, 0.0, 1.0);"
+    "gl_FragColor = clamp(bg_colour - mask_colour + vColor * mask_colour, "
     "                     0.0, 1.0);"
     "}";
 
 const char kObjectShader[] =
+    "varying vec4 vColor;\n"
     "uniform sampler2D image;\n"
     "uniform vec4 colour;\n"
     "uniform float mono;\n"
@@ -111,8 +113,12 @@ const char kObjectShader[] =
     "}\n";
 
 const char kVertexShader[] =
+  "varying vec4 vColor;\n"
   "void main() {\n"
   "  gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
+  "  gl_TexCoord[0] = gl_MultiTexCoord0;\n"
+  "  gl_TexCoord[1] = gl_MultiTexCoord1;\n"
+  "  vColor = gl_Color;\n"
   "}\n";
 
 }  // namespace
