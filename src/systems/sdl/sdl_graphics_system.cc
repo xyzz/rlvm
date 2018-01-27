@@ -128,6 +128,7 @@ void SDLGraphicsSystem::EndFrame() {
     (*it)->Render(NULL);
   }
 
+#ifndef __ANDROID__ // broken, for now
   if (screen_update_mode() == SCREENUPDATEMODE_MANUAL) {
     // Copy the area behind the cursor to the temporary buffer (drivers differ:
     // the contents of the back buffer is undefined after SDL_GL_SwapBuffers()
@@ -143,7 +144,10 @@ void SDLGraphicsSystem::EndFrame() {
                         screen_size().width(),
                         screen_size().height());
     screen_contents_texture_valid_ = true;
-  } else {
+  }
+  else 
+#endif
+  {
     screen_contents_texture_valid_ = false;
   }
 
@@ -300,6 +304,14 @@ void SDLGraphicsSystem::SetupVideo() {
     ss << "Video mode set failed: " << SDL_GetError();
     throw SystemError(ss.str());
   }
+
+#ifdef __ANDROID__
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+  // use opengles 2
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#endif
+
   SDL_GL_CreateContext(screen_);
 
 #ifndef __ANDROID__

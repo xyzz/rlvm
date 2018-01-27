@@ -43,7 +43,8 @@
 namespace {
 
 const char kColorMaskShader[] =
-    "uniform sampler2D current_values, mask;"
+    "uniform sampler2D current_values;\n"
+    "uniform sampler2D mask;\n"
     ""
     "void main()"
     "{"
@@ -108,6 +109,11 @@ const char kObjectShader[] =
     "  pixel.a = pixel.a * alpha;\n"
     "  gl_FragColor = pixel;\n"
     "}\n";
+
+const char kVertexShader[] =
+  "void main() {\n"
+  "  gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
+  "}\n";
 
 }  // namespace
 
@@ -281,32 +287,49 @@ GLint Shaders::GetObjectUniformInvert() {
 
 // static
 void Shaders::buildShader(const char* shader, GLuint* program_object) {
-  GLuint shader_object = glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
+  // create fragment shader
+  GLuint fragment_shader = glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
   DebugShowGLErrors();
 
-  glShaderSourceARB(shader_object, 1, &shader, NULL);
+  glShaderSourceARB(fragment_shader, 1, &shader, NULL);
   DebugShowGLErrors();
 
-  glCompileShaderARB(shader_object);
+  glCompileShaderARB(fragment_shader);
   DebugShowGLErrors();
 
 #ifndef NDEBUG
   GLint blen = 0;
   GLsizei slen = 0;
-  glGetShaderiv(shader_object, GL_INFO_LOG_LENGTH, &blen);
+  glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH, &blen);
   if (blen > 1) {
     GLchar* compiler_log = new GLchar[blen];
-    glGetInfoLogARB(shader_object, blen, &slen, compiler_log);
+    glGetInfoLogARB(fragment_shader, blen, &slen, compiler_log);
     std::cout << "compiler_log: " << std::endl << compiler_log << std::endl;
     delete[] compiler_log;
   }
 #endif
 
+  // create vertex shader
+  GLuint vertex_shader = glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
+  DebugShowGLErrors();
+
+  const char *ptr = kVertexShader;
+  glShaderSourceARB(vertex_shader, 1, &ptr, NULL);
+  DebugShowGLErrors();
+
+  glCompileShaderARB(vertex_shader);
+  DebugShowGLErrors();
+
   *program_object = glCreateProgramObjectARB();
-  glAttachObjectARB(*program_object, shader_object);
+  glAttachObjectARB(*program_object, fragment_shader);
+  DebugShowGLErrors();
+
+  glAttachObjectARB(*program_object, vertex_shader);
   DebugShowGLErrors();
 
   glLinkProgramARB(*program_object);
-  glDeleteObjectARB(shader_object);
+
+  glDeleteObjectARB(fragment_shader);
+  glDeleteObjectARB(vertex_shader);
   ShowGLErrors();
 }
