@@ -67,12 +67,13 @@ if not GetOption("android"):
   env["CPPDEFINES"].append("ENABLE_NLS")
 
 if GetOption("android"):
+  env["CC"] = env["CXX"] = ""
   print("-- Cross-compile ---")
-  for name in ["CC", "CXX", "LDFLAGS"]:
+  for name in ["CC", "CXX", "LINKFLAGS", "CFLAGS", "CPPFLAGS"]:
     value = os.environ.get(name)
     if value:
       print("Set env[{}] to {}".format(name, value))
-      env[name] = value
+      env.Append(**{name: value.split(" ")})
   env["ENV"] = os.environ
   print("--------------------")
 

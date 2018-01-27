@@ -30,7 +30,6 @@
 #else
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
-#include <GL/glu.h>
 #endif
 
 #include "systems/sdl/sdl_utils.h"
@@ -52,7 +51,11 @@ void ShowGLErrors(void) {
   GLenum error;
   const GLubyte* err_str;
   if ((error = glGetError()) != GL_NO_ERROR) {
+#ifdef __ANDROID__
+    err_str = (GLubyte*)"unknown_gl_error";
+#else
     err_str = gluErrorString(error);
+#endif
     std::ostringstream oss;
     oss << "OpenGL Error: " << (char*)err_str;
     throw SystemError(oss.str());

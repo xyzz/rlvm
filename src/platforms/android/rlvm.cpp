@@ -111,7 +111,7 @@ __attribute__((visibility("default"))) int main(int argc, char* argv[]) {
 
   // g_root_path = root_path;
 
-  g_root_path = "/sdcard/CLANNAD/"; 
+  g_root_path = "/storage/5170-FBC7/CLANNAD/"; 
 
   fs::path gamerootPath(g_root_path);
 
