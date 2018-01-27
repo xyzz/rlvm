@@ -357,7 +357,7 @@ WAVFILE_Converter::WAVFILE_Converter(WAVFILE* _orig, SDL_AudioCVT* _cvt) {
 static int conv_wave_rate(short* in_buf, int length, int in_rate, int out_rate, char* tmpbuf);
 WAVFILE_Converter::~WAVFILE_Converter() {
 	if (cvt) {
-		if (cvt->buf) delete cvt->buf;
+		if (cvt->buf) delete[] cvt->buf;
 		delete cvt;
 		cvt = 0;
 	}
