@@ -68,7 +68,7 @@ if not GetOption("android"):
 
 if GetOption("android"):
   print("-- Cross-compile ---")
-  for name in ["CC", "CXX"]:
+  for name in ["CC", "CXX", "LDFLAGS"]:
     value = os.environ.get(name)
     if value:
       print("Set env[{}] to {}".format(name, value))
@@ -396,7 +396,12 @@ if env['PLATFORM'] == 'darwin':
                  variant_dir="$BUILD_DIR/",
                  duplicate=0,
                  exports='env')
-elif not GetOption('android'):
+elif GetOption('android'):
+  env.SConscript("SConscript.android",
+               variant_dir="$BUILD_DIR/",
+               duplicate=0,
+               exports='env')
+else:
   env.SConscript("SConscript.gtk",
                  variant_dir="$BUILD_DIR/",
                  duplicate=0,

@@ -1,0 +1,27 @@
+Import('env')
+
+root_env = env.Clone()
+root_env.Append(LIBS=["GL", "c++_shared"])
+
+root_env.Append(
+  CXXFLAGS = [
+    "--ansi",
+    "-std=c++11"
+  ],
+
+  LDFLAGS = [
+    "-Wl,--no-undefined"
+  ]
+)
+
+androidrlvm_files = [
+  # Technically cross platform, but put here for SDL dependency.
+  "src/machine/rlvm_instance.cc",
+
+  "src/platforms/android/rlvm.cpp",
+  "src/platforms/android/AndroidRLVMInstance.cpp",
+]
+
+root_env.SharedLibrary('rlvm', androidrlvm_files,
+                     use_lib_set = ["SDL2"],
+                     rlvm_libs = ["guichan_platform", "system_sdl", "rlvm"])
