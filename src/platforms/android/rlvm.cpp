@@ -28,6 +28,7 @@
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <string>
+#include <atomic>
 
 #include <unistd.h>
 
@@ -38,7 +39,17 @@
 
 #include "AndroidRLVMInstance.hpp"
 
+#include "libreallive/gameexe.h"
+#include "systems/base/rect.h"
+#include "utilities/file.h"
+#include "utilities/graphics.h"
+
 using namespace std;
+
+#define SDL_JAVA_PREFIX                                 org_libsdl_app
+#define CONCAT1(prefix, class, function)                CONCAT2(prefix, class, function)
+#define CONCAT2(prefix, class, function)                Java_ ## prefix ## _ ## class ## _ ## function
+#define SDL_JAVA_INTERFACE(function)                    CONCAT1(SDL_JAVA_PREFIX, SDLActivity, function)
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -92,26 +103,58 @@ static void appPutToForeground()
   glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
 }
 
+void ScreenSizeCallback(const Size& size) {
+  JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+
+  // retrieve the Java instance of the SDLActivity
+  jobject activity = (jobject)SDL_AndroidGetActivity();
+
+  // find the Java class of the activity. It should be SDLActivity or a subclass of it.
+  jclass clazz(env->GetObjectClass(activity));
+
+  // find the identifier of the method to call
+  jmethodID method_id = env->GetMethodID(clazz, "setScreenSize", "(II)V");
+
+  // effectively call the Java method
+  env->CallVoidMethod(activity, method_id, size.width(), size.height());
+
+  // clean up the local references.
+  env->DeleteLocalRef(activity);
+  env->DeleteLocalRef(clazz);
+}
+
+// has to be duplicated here because we need to set ScreenSize ASAP
+boost::filesystem::path FindGameFile(
+    const boost::filesystem::path& gamerootPath,
+    const std::string& filename) {
+  fs::path search_for = gamerootPath / filename;
+  fs::path corrected_path = CorrectPathCase(search_for);
+  if (corrected_path.empty()) {
+    throw std::runtime_error("Corrected path is empty");
+  }
+
+  return corrected_path;
+}
+
+static std::atomic<bool> ready;
+
+extern "C" JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeReady)(JNIEnv* env, jclass cls) {
+  ready = true;
+}
+
 __attribute__((visibility("default"))) int main(int argc, char* argv[]) {
-  // SDL_ANDROID_SetApplicationPutToBackgroundCallback(&appPutToBackground, &appPutToForeground);
+  g_root_path = "/storage/5170-FBC7/CLANNAD/";
 
-  // // get path to game, this call is approximately 2x more disgusting than another one
-  // JNIEnv *env = SDL_ANDROID_JniEnv();
-  // jobject obj = SDL_ANDROID_JniVideoObject();
-  // jclass clazz = env->FindClass("is/xyz/rlvm/DemoRenderer");
-  // jmethodID methodID = env->GetMethodID(clazz, "getGamepath", "()Ljava/lang/String;");
+  fs::path gameexePath = FindGameFile(g_root_path, "Gameexe.ini");
 
-  // jobject result = env->CallObjectMethod(obj, methodID);
+  ready = false;
 
-  // const char* str;
-  // jboolean isCopy;
-  // str = env->GetStringUTFChars((jstring)result, &isCopy);
-  // std::string root_path(str);
-  // env->ReleaseStringUTFChars((jstring)result, str);
+  Gameexe gameexe(gameexePath);
+  ScreenSizeCallback(GetScreenSize(gameexe));
 
-  // g_root_path = root_path;
-
-  g_root_path = "/storage/5170-FBC7/CLANNAD/"; 
+  // we want the surface to get the changes and resize itself before we create SDL2 context and everything
+  while (!ready)
+    sleep(1);
 
   fs::path gamerootPath(g_root_path);
 
@@ -119,3 +162,4 @@ __attribute__((visibility("default"))) int main(int argc, char* argv[]) {
 
   return 0;
 }
+
