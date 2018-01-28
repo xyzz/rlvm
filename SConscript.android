@@ -15,9 +15,6 @@ root_env.Append(
   ],
 
   LIBS = [
-    "guichan",
-    "zita-resampler",
-
     "vorbisfile",
     "vorbis",
     "ogg",
@@ -38,6 +35,9 @@ androidrlvm_files = [
   "libguichan_platform.a",
   "libsystem_sdl.a",
   "librlvm.a",
+
+  "../libraries/libguichan.a",
+  "../libraries/libzita-resampler.a",
 ]
 
 root_env['STATIC_AND_SHARED_OBJECTS_ARE_THE_SAME']=1
