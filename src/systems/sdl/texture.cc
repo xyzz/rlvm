@@ -356,7 +356,7 @@ void Texture::RenderToScreenAsColorMask(const Rect& src,
                                         int filter) {
   if (filter == 0) {
     #ifdef __ANDROID__
-    bool supported = true;
+    bool supported = false;
     #else
     bool supported = GLEW_ARB_fragment_shader && GLEW_ARB_multitexture;
     #endif
@@ -658,7 +658,7 @@ void Texture::RenderToScreenAsObject(const GraphicsObject& go,
     // to use it.
     bool using_shader = false;
     #ifdef __ANDROID__
-    bool supported = true;
+    bool supported = false;
     #else
     bool supported = GLEW_ARB_fragment_shader && GLEW_ARB_multitexture;
     #endif

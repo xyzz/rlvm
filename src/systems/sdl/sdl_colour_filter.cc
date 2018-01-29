@@ -51,7 +51,7 @@ void SDLColourFilter::Fill(const GraphicsObject& go,
                            const Rect& screen_rect,
                            const RGBAColour& colour) {
 #ifdef __ANDROID__
-  bool supported = true;
+  bool supported = false;
 #else
   bool supported = GLEW_ARB_fragment_shader && GLEW_ARB_multitexture;
 #endif
